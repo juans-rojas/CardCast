@@ -74,6 +74,11 @@ app.use(express.static('public'));
 // Serve cached images
 app.use('/cache', express.static(path.join(__dirname, 'cache')));
 
+// Serve custom fonts
+app.get('/fonts/EssentiarumTCG.woff2', (req, res) => {
+    res.sendFile(path.join(__dirname, 'EssentiarumTCG.woff2'));
+});
+
 // Routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -190,6 +195,16 @@ app.get('/api/pokemon/sets', (req, res) => {
     }
 });
 
+app.get('/api/pokemon/available-sets', async (req, res) => {
+    try {
+        const sets = await tcgApi.fetchPokemonSets();
+        res.json(sets);
+    } catch (error) {
+        console.error('Error fetching available Pokemon sets:', error);
+        res.status(500).json({ error: 'Failed to fetch available Pokemon sets' });
+    }
+});
+
 // Magic Temp Testing
 //---------------------------------------------------------------------------
 
@@ -302,7 +317,9 @@ app.delete('/api/games/:game/data', (req, res) => {
 app.post('/api/download/:game', async (req, res) => {
     const game = req.params.game;
     const incremental = req.body.incremental || false;
-    const setCount = req.body.setCount || 'all';
+    const setIds = Array.isArray(req.body.setIds) ? req.body.setIds.filter(id => typeof id === 'string' && id.trim() !== '') : null;
+    const setCount = setIds && setIds.length ? setIds : (req.body.setCount || 'all');
+    const useHighRes = req.body.useHighRes === true;
     
     // Only allow download for set available games
     if (!AVAILABLE_GAMES.includes(game)) {
@@ -320,7 +337,8 @@ app.post('/api/download/:game', async (req, res) => {
         message: incremental ? 'Update started' : 'Download started', 
         game,
         mode: incremental ? 'incremental' : 'full',
-        setCount
+        setCount,
+        useHighRes
     });
     
     // Start download in background
@@ -330,7 +348,7 @@ app.post('/api/download/:game', async (req, res) => {
             progress: progress.percent || 0,
             message: progress.message || 'Processing...'
         });
-    }, incremental, setCount).then((cardCount) => {
+    }, incremental, setCount, useHighRes).then((cardCount) => {
         io.emit('download-complete', { 
             game, 
             cardCount,
@@ -517,12 +535,11 @@ io.on('connection', (socket) => {
         const state = overlayServer.getState();
         if (type === 'pokemon-match') {
             socket.emit('pokemon-match-state', state.pokemonMatch);
-            // Also send as update for compatibility
-            socket.emit('pokemon-match-update', {
-                player1: state.pokemonMatch.player1,
-                player2: state.pokemonMatch.player2,
-                stadium: state.pokemonMatch.stadium
-            });
+            // Also send as update for compatibility (sending full state)
+            socket.emit('pokemon-match-update', state.pokemonMatch);
+            // Ask control panels to re-push their overlay visibility state
+            // so the overlay gets the authoritative value from the control panel's localStorage
+            io.emit('sync-overlay-visibility', { type: 'pokemon-match' });
         } else if (type === 'prizes') {
             socket.emit('prizes-state', state);
         } else if (type === 'decklist') {
@@ -573,12 +590,10 @@ io.on('connection', (socket) => {
         } else if (type === 'pokemon-match') {
             // Send the pokemonMatch state from the overlay server
             socket.emit('pokemon-match-state', state.pokemonMatch);
-            // Also send as update for compatibility
-            socket.emit('pokemon-match-update', {
-                player1: state.pokemonMatch.player1,
-                player2: state.pokemonMatch.player2,
-                stadium: state.pokemonMatch.stadium
-            });
+            // Also send as update for compatibility (sending full state)
+            socket.emit('pokemon-match-update', state.pokemonMatch);
+            // Ask control panels to re-push their overlay visibility state
+            io.emit('sync-overlay-visibility', { type: 'pokemon-match' });
         } else if (type === 'mtg-match') {
             socket.emit('state-update', { mtgMatch: state.mtgMatch });
         }
@@ -642,6 +657,11 @@ io.on('connection', (socket) => {
         io.emit('pokemon-match-update', data);
     });
     
+    socket.on('pokemon-evolved', (data) => {
+        console.log('Pokemon evolved:', data);
+        io.emit('pokemon-evolved', data);
+    });
+    
     socket.on('active-pokemon', (data) => {
         console.log('Active pokemon update for player', data.player);
         overlayServer.updateActivePokemon(data.player, data.pokemon);  // Store in overlay server
@@ -673,17 +693,34 @@ io.on('connection', (socket) => {
     
     socket.on('timer-start', () => {
         console.log('Timer start');
+        overlayServer.pokemonMatch.timerRunning = true;
         io.emit('timer-start');
     });
     
     socket.on('timer-pause', () => {
         console.log('Timer pause');
+        overlayServer.pokemonMatch.timerRunning = false;
         io.emit('timer-pause');
     });
     
-    socket.on('timer-reset', () => {
-        console.log('Timer reset');
-        io.emit('timer-reset');
+    socket.on('timer-reset', (data) => {
+        console.log('Timer reset:', data);
+        overlayServer.pokemonMatch.timerRunning = false;
+        if (data) {
+            overlayServer.updateTimer(data);
+        }
+        io.emit('timer-reset', data);
+    });
+
+    socket.on('timer-tick', (data) => {
+        overlayServer.updateTimer(data);
+        socket.broadcast.emit('timer-tick', data); // Broadcast tick to overlay
+    });
+
+    socket.on('timer-set', (data) => {
+        console.log('Timer set:', data);
+        overlayServer.updateTimer(data);
+        io.emit('timer-set', data);
     });
     
     socket.on('match-reset', () => {
@@ -698,6 +735,7 @@ io.on('connection', (socket) => {
     
     socket.on('toggle-pokemon-match', (data) => {
         console.log('Toggle pokemon match overlay:', data.show);
+        overlayServer.pokemonMatch.showOverlay = data.show;
         io.emit('toggle-pokemon-match', data);
     });
     

@@ -50,9 +50,13 @@ class OverlayServer {
             },
             currentTurn: 1,
             timer: { minutes: 50, seconds: 0 },
+            timerRunning: false,
             gameNumber: 1,
             matchFormat: 'Best of 3',
-            stadium: ''
+            stadium: '',
+            showOverlay: false,
+            activeAnimation: null,
+            language: 'en'
         };
 
         // MTG Match State
@@ -572,6 +576,15 @@ class OverlayServer {
         if (data.stadium !== undefined) {
             this.pokemonMatch.stadium = data.stadium;
         }
+        if (data.showOverlay !== undefined) {
+            this.pokemonMatch.showOverlay = data.showOverlay;
+        }
+        if (data.activeAnimation !== undefined) {
+            this.pokemonMatch.activeAnimation = data.activeAnimation;
+        }
+        if (data.language !== undefined) {
+            this.pokemonMatch.language = data.language;
+        }
         
         this.io.emit('pokemon-match-update', data);
     }
@@ -728,6 +741,7 @@ class OverlayServer {
     }
     
     startTimer(duration = 50 * 60) {
+        this.pokemonMatch.timerRunning = true;
         this.io.emit('timer-start', {
             duration: duration,
             timestamp: Date.now()
@@ -735,15 +749,23 @@ class OverlayServer {
     }
     
     pauseTimer() {
+        this.pokemonMatch.timerRunning = false;
         this.io.emit('timer-pause', {
             timestamp: Date.now()
         });
     }
     
     resetTimer() {
+        this.pokemonMatch.timerRunning = false;
         this.io.emit('timer-reset', {
             timestamp: Date.now()
         });
+    }
+
+    updateTimer(timer) {
+        if (timer) {
+            this.pokemonMatch.timer = timer;
+        }
     }
 }
 

@@ -217,17 +217,13 @@ function buildAddCardSection() {
     const deck = editingDeck || currentViewedDeck;
     const game = deck.game;
     
-    let categoryOptions = '';
+    let selectHTML = '';
     if (game === 'magic') {
-        categoryOptions = `
-            <option value="cards">Main Deck</option>
-            <option value="sideboard">Sideboard</option>
-        `;
-    } else {
-        categoryOptions = `
-            <option value="pokemon">Pokémon</option>
-            <option value="trainers">Trainers</option>
-            <option value="energy">Energy</option>
+        selectHTML = `
+            <select id="addCardCategory" class="select select-bordered">
+                <option value="cards">Main Deck</option>
+                <option value="sideboard">Sideboard</option>
+            </select>
         `;
     }
     
@@ -240,15 +236,25 @@ function buildAddCardSection() {
                        class="input input-bordered flex-1" 
                        placeholder="Search for cards to add..."
                        onkeyup="searchCardsToAdd(event)">
-                <select id="addCardCategory" class="select select-bordered">
-                    ${categoryOptions}
-                </select>
+                ${selectHTML}
             </div>
             <div id="addCardResults" class="add-card-results">
                 <!-- Search results will appear here -->
             </div>
         </div>
     `;
+}
+
+/**
+ * Helper to get the expected card type based on category
+ */
+function getExpectedCardType(category) {
+    if (!category) return null;
+    const lowerCat = category.toLowerCase();
+    if (lowerCat === 'pokemon' || lowerCat === 'pokemons') return 'pokémon';
+    if (lowerCat === 'trainers' || lowerCat === 'trainer') return 'trainer';
+    if (lowerCat === 'energy') return 'energy';
+    return null;
 }
 
 /**
@@ -273,7 +279,21 @@ async function renderDeckCards(cards, game, category) {
             }
             
             const response = await fetch(`/api/search/${game}?q=${encodeURIComponent(searchQuery)}`);
-            const results = await response.json();
+            let results = await response.json();
+            
+            if (game === 'pokemon') {
+                const expectedType = getExpectedCardType(category);
+                if (expectedType) {
+                    results = results.filter(r => {
+                        if (!r.card_type) return false;
+                        const type = r.card_type.toLowerCase();
+                        if (expectedType === 'pokémon') {
+                            return type === 'pokémon' || type === 'pokemon';
+                        }
+                        return type === expectedType;
+                    });
+                }
+            }
             
             if (results.length > 0) {
                 let matchedCard = null;
@@ -414,11 +434,21 @@ window.saveDeckEdits = function() {
 }
 
 /**
+ * Helper to determine if a card has no copy restriction (contains "Basic" and "Energy" in its name)
+ */
+function isUnlimitedCard(cardName) {
+    if (!cardName) return false;
+    const lowerName = cardName.toLowerCase();
+    return lowerName.includes('basic') && lowerName.includes('energy');
+}
+
+/**
  * Adjust card quantity
  */
 window.adjustCardQuantity = function(category, index, delta) {
     const card = editingDeck[category][index];
-    card.quantity = Math.max(1, Math.min(4, card.quantity + delta));
+    const maxQty = isUnlimitedCard(card.name) ? 99 : 4;
+    card.quantity = Math.max(1, Math.min(maxQty, card.quantity + delta));
     renderDeckView();
 }
 
@@ -444,11 +474,11 @@ window.searchCardsToAdd = async function(event) {
     
     try {
         const response = await fetch(`/api/search/${game}?q=${encodeURIComponent(query)}`);
-        const results = await response.json();
+        let results = await response.json();
         
         const resultsHTML = results.slice(0, 24).map(card => `
             <div class="add-card-result" 
-                 onclick="addCardToDeck('${card.name.replace(/'/g, "\\'")}', '${card.image_url || '/images/card-back.png'}')">
+                 onclick="addCardToDeck('${card.name.replace(/'/g, "\\'")}', '${card.image_url || '/images/card-back.png'}', '${card.card_type || ''}')">
                 <img src="${card.image_url || '/images/card-back.png'}" 
                      alt="${card.name}"
                      title="${card.name}">
@@ -464,20 +494,54 @@ window.searchCardsToAdd = async function(event) {
 /**
  * Add card to deck
  */
-window.addCardToDeck = function(cardName, cardImage) {
-    const category = document.getElementById('addCardCategory').value;
+window.addCardToDeck = function(cardName, cardImage, cardType) {
+    const game = editingDeck.game;
+    let category = '';
+    
+    if (game === 'pokemon') {
+        const typeLower = (cardType || '').toLowerCase();
+        if (typeLower === 'pokémon' || typeLower === 'pokemon') {
+            category = 'pokemon';
+        } else if (typeLower === 'trainer') {
+            category = 'trainers';
+        } else if (typeLower === 'energy') {
+            category = 'energy';
+        } else {
+            // Safe fallback
+            const trainerKeywords = [
+                'Professor', 'Boss', 'Iono', 'Arven', 'Nest Ball', 'Ultra Ball',
+                'Rare Candy', 'Switch', 'Town Store', 'Technical Machine',
+                'Pokégear', 'Poké Ball', 'Super Rod', 'Counter Catcher',
+                'Retrieval', 'Search', 'Recycler', 'Removal', 'Lure', 'Restore',
+                'Reset', 'Transfer', 'Flow', 'Exchanger', 'Spinner', 'Pointer',
+                'Compressor', 'Condenser', 'Generator', 'Urn', 'Amplifier', 'Stadium'
+            ];
+            const lowerName = cardName.toLowerCase();
+            if (trainerKeywords.some(keyword => lowerName.includes(keyword.toLowerCase()))) {
+                category = 'trainers';
+            } else if (lowerName.includes('energy')) {
+                category = 'energy';
+            } else {
+                category = 'pokemon';
+            }
+        }
+    } else {
+        const categoryElement = document.getElementById('addCardCategory');
+        category = categoryElement ? categoryElement.value : 'cards';
+    }
     
     if (!editingDeck[category]) {
         editingDeck[category] = [];
     }
     
     const existingCard = editingDeck[category].find(c => c.name === cardName);
+    const maxQty = isUnlimitedCard(cardName) ? 99 : 4;
     
     if (existingCard) {
-        if (existingCard.quantity < 4) {
+        if (existingCard.quantity < maxQty) {
             existingCard.quantity++;
         } else {
-            alert('Maximum 4 copies of a card allowed');
+            alert(`Maximum ${maxQty} copies of a card allowed`);
             return;
         }
     } else {

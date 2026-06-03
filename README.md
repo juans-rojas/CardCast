@@ -64,10 +64,10 @@ npm run build
 
 | Overlay | URL | Description |
 |---------|-----|-------------|
-| Main Display | `http://localhost:3888/overlay` | Dual card display with VS indicator |
-| Prize Cards | `http://localhost:3888/prizes` | Pokemon prize tracker (6 cards) |
-| Deck List | `http://localhost:3888/decklist` | Full deck display |
 | Pokemon Match | `http://localhost:3888/pokemon-match` | Complete match overlay |
+| Main Display (Obsolete) | `http://localhost:3888/overlay` | Dual card display with VS indicator |
+| Prize Cards (Obsolete) | `http://localhost:3888/prizes` | Pokemon prize tracker (6 cards) |
+| Deck List (Obsolete) | `http://localhost:3888/decklist` | Full deck display |
 
 ## Pokemon Features
 

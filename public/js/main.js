@@ -7,6 +7,7 @@ let searchResults = [];
 let selectedCard = null;
 let recentCards = [];
 let isOBSConnected = false;
+let availablePokemonSets = [];
 
 // Pokemon Match State
 let pokemonMatchState = {
@@ -126,6 +127,19 @@ function initializeEventListeners() {
             copyToClipboard(targetId);
         });
     });
+
+    // High resolution images toggle
+    const highResToggle = document.getElementById('highResImagesToggle');
+    if (highResToggle) {
+        // Load initial state
+        const storedVal = localStorage.getItem('useHighResImages');
+        highResToggle.checked = storedVal === 'true';
+        
+        // Listen for changes
+        highResToggle.addEventListener('change', (e) => {
+            localStorage.setItem('useHighResImages', e.target.checked);
+        });
+    }
 }
 
 // Load games list
@@ -252,6 +266,15 @@ function selectGame(gameId, hasData) {
         pokemonControls.style.display = gameId === 'pokemon' ? 'block' : 'none';
     }
 
+    const pokemonSetPicker = document.getElementById('pokemonSetPicker');
+    if (pokemonSetPicker) {
+        pokemonSetPicker.style.display = gameId === 'pokemon' ? 'block' : 'none';
+    }
+
+    if (gameId === 'pokemon' && availablePokemonSets.length === 0) {
+        loadPokemonSets();
+    }
+
     // Show/hide match control buttons
     const pokemonBtn = document.getElementById('pokemonMatchBtn');
     const mtgBtn = document.getElementById('mtgMatchBtn');
@@ -278,15 +301,25 @@ function selectGame(gameId, hasData) {
 
 // Download game data - UPDATED FOR COMING SOON
 async function downloadGameData(gameId) {
+    const selectedSetIds = gameId === 'pokemon' ? await getSelectedPokemonSetIds() : [];
+    const fallbackSetCount = document.querySelector('input[name="sets"]:checked')?.value || 'all';
+    const highResToggle = document.getElementById('highResImagesToggle');
+    const useHighRes = highResToggle ? highResToggle.checked : false;
+    const body = { incremental: false, useHighRes };
 
-    const setCount = document.querySelector('input[name="sets"]:checked')?.value || '1';
+    if (selectedSetIds.length) {
+        body.setIds = selectedSetIds;
+    } else {
+        body.setCount = fallbackSetCount;
+    }
+
     showDownloadProgress(true);
     
     try {
         const response = await fetch(`/api/download/${gameId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ incremental: false, setCount })
+            body: JSON.stringify(body)
         });
         
         if (!response.ok) {
@@ -299,16 +332,76 @@ async function downloadGameData(gameId) {
     }
 }
 
+async function getSelectedPokemonSetIds() {
+    const select = document.getElementById('pokemonSetSelect');
+    if (!select) return [];
+
+    return Array.from(select.selectedOptions).map(option => option.value);
+}
+
+async function loadPokemonSets() {
+    const picker = document.getElementById('pokemonSetPicker');
+    const select = document.getElementById('pokemonSetSelect');
+    const message = document.getElementById('pokemonSetPickerMessage');
+
+    if (!picker || !select || !message) return;
+
+    picker.classList.remove('hidden');
+    select.innerHTML = '<option disabled>Loading sets...</option>';
+    message.textContent = 'Loading available Pokemon sets...';
+
+    try {
+        const response = await fetch('/api/pokemon/available-sets');
+        if (!response.ok) {
+            throw new Error('Failed to load sets');
+        }
+
+        const sets = await response.json();
+        availablePokemonSets = sets;
+        select.innerHTML = '';
+
+        if (sets.length === 0) {
+            select.innerHTML = '<option disabled>No sets available</option>';
+            message.textContent = 'No available Pokemon sets could be loaded.';
+            return;
+        }
+
+        sets.forEach(set => {
+            const option = document.createElement('option');
+            option.value = set.id;
+            option.textContent = `${set.name} (${set.series})`;
+            select.appendChild(option);
+        });
+
+        message.textContent = 'Select one or more sets to download. If none are selected, the active set count option is used.';
+    } catch (error) {
+        console.error('Error loading Pokemon sets:', error);
+        select.innerHTML = '<option disabled>Unable to load sets</option>';
+        message.textContent = 'Unable to load available Pokemon sets.';
+    }
+}
+
 // Update game data - UPDATED FOR COMING SOON
 async function updateGameData(gameId) {    
-    const setCount = document.querySelector('input[name="sets"]:checked')?.value || '3';
+    const selectedSetIds = gameId === 'pokemon' ? await getSelectedPokemonSetIds() : [];
+    const fallbackSetCount = document.querySelector('input[name="sets"]:checked')?.value || '3';
+    const highResToggle = document.getElementById('highResImagesToggle');
+    const useHighRes = highResToggle ? highResToggle.checked : false;
+    const body = { incremental: true, useHighRes };
+
+    if (selectedSetIds.length) {
+        body.setIds = selectedSetIds;
+    } else {
+        body.setCount = fallbackSetCount;
+    }
+
     showDownloadProgress(true);
     
     try {
         const response = await fetch(`/api/download/${gameId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ incremental: true, setCount })
+            body: JSON.stringify(body)
         });
         
         if (!response.ok) {
@@ -626,8 +719,6 @@ function switchTurn() {
     socket.emit('turn-switch', {
         currentTurn: pokemonMatchState.currentTurn
     });
-    
-    alert(`Now Player ${pokemonMatchState.currentTurn}'s turn`);
 }
 
 function toggleTimer() {
@@ -1021,6 +1112,12 @@ async function loadConfig() {
 // Keyboard shortcuts
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
+        // Ignore keyboard shortcuts if the user is typing in an input/textarea/select/contenteditable
+        const tagName = e.target.tagName;
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || e.target.isContentEditable) {
+            return;
+        }
+
         // Ctrl+F - Focus search
         if (e.ctrlKey && e.key === 'f') {
             e.preventDefault();

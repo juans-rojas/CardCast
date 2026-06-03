@@ -57,7 +57,7 @@ class TCGCSVApi {
         ];
     }
     
-    async downloadGameData(game, progressCallback, incremental = false, setCount = 'all') {
+    async downloadGameData(game, progressCallback, incremental = false, setCount = 'all', useHighRes = false) {
         const category = this.categories[game];
         if (!category) {
             throw new Error(`Unsupported game: ${game}`);
@@ -168,7 +168,7 @@ class TCGCSVApi {
                     }
                 }
                 
-                const card = this.processProductToCard(product, game);
+                const card = this.processProductToCard(product, game, useHighRes);
                 if (card) {
                     cardMap.set(product.productId, card);
                     processedCards.push(card);
@@ -462,7 +462,7 @@ class TCGCSVApi {
         return product.productId && product.name;
     }
     
-    processProductToCard(product, game) {
+    processProductToCard(product, game, useHighRes = false) {
         try {
             // Extract extended data into a map for easy access
             const extData = {};
@@ -481,7 +481,7 @@ class TCGCSVApi {
                 set_name: this.extractSetName(product, game),
                 set_code: product.groupId?.toString() || '',
                 card_number: extData['Number'] || '',
-                image_url: this.fixImageUrl(product.imageUrl),
+                image_url: this.fixImageUrl(product.imageUrl, useHighRes),
                 rarity: extData['Rarity'] || 'Common',
                 card_type: extData['Card Type'] || '',
                 card_text: extData['Card Text'] || ''
@@ -613,14 +613,14 @@ class TCGCSVApi {
         return product.groupName || '';
     }
     
-    fixImageUrl(imageUrl) {
+    fixImageUrl(imageUrl, useHighRes = false) {
         if (!imageUrl) return '';
         
         // Convert low-res TCGPlayer CDN URLs to high-res
         // From: https://tcgplayer-cdn.tcgplayer.com/product/642450_200w.jpg
         // To: https://tcgplayer-cdn.tcgplayer.com/product/642450_in_1000x1000.jpg
         
-        if (imageUrl.includes('tcgplayer-cdn.tcgplayer.com')) {
+        if (useHighRes && imageUrl.includes('tcgplayer-cdn.tcgplayer.com')) {
             // Remove any size suffix (_200w, _400w, etc.)
             imageUrl = imageUrl.replace(/_\d+w\.jpg$/i, '.jpg');
             // Remove .jpg and add high-res suffix

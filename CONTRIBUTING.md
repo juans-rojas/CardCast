@@ -5,7 +5,7 @@ Thank you for your interest in contributing to CardCast! We welcome contribution
 ## How to Contribute
 
 ### Reporting Bugs
-1. Check if the issue already exists in [GitHub Issues](https://github.com/yzRobo/CardCast/issues)
+1. Check if the issue already exists in [[GitHub Issues](https://github.com/juans-rojas/CardCast/issues)
 2. Create a new issue with:
    - Clear title describing the problem
    - Steps to reproduce
@@ -24,7 +24,7 @@ Thank you for your interest in contributing to CardCast! We welcome contribution
 #### Setup Development Environment
 ```bash
 # Fork and clone the repository
-git clone https://github.com/yzRobo/CardCast.git
+git clone https://github.com/juans-rojas/CardCast.git
 cd cardcast
 
 # Install dependencies
@@ -120,7 +120,6 @@ Update documentation when you:
 ### Questions?
 
 - Open an issue for discussion
-- Contact me on [Twitter](https://twitter.com/yzRobo)
 
 ## Code of Conduct
 
@@ -134,3 +133,5 @@ Update documentation when you:
 By contributing, you agree that your contributions will be licensed under GPL-3.0.
 
 Thank you for helping make CardCast better for the TCG streaming community!
+
+Look at the original project for other updates (https://github.com/yzRobo/CardCast)

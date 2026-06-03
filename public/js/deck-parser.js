@@ -198,10 +198,10 @@ function parsePokemonDeckList(lines) {
         
         // Auto-detect section if not set
         if (!currentSection) {
-            if (trimmed.toLowerCase().includes('energy')) {
-                currentSection = 'energy';
-            } else if (isTrainerCard(trimmed)) {
+            if (isTrainerCard(trimmed)) {
                 currentSection = 'trainers';
+            } else if (trimmed.toLowerCase().includes('energy')) {
+                currentSection = 'energy';
             } else if (trimmed.match(/\d+\s+.+\s+[A-Z]{2,4}\s+\d+/)) {
                 currentSection = 'pokemon';
             }
@@ -281,6 +281,28 @@ function parsePokemonDeckList(lines) {
         }
         
         if (cardData) {
+            const energyReplacements = {
+                'grass energy': 'Basic Grass Energy',
+                'fire energy': 'Basic Fire Energy',
+                'water energy': 'Basic Water Energy',
+                'lightning energy': 'Basic Lightning Energy',
+                'psychic energy': 'Basic Psychic Energy',
+                'fighting energy': 'Basic Fighting Energy',
+                'darkness energy': 'Basic Darkness Energy',
+                'metal energy': 'Basic Metal Energy'
+            };
+            const lowerName = cardData.name.toLowerCase().trim();
+            if (energyReplacements[lowerName]) {
+                cardData.name = energyReplacements[lowerName];
+                if (cardData.setCode && cardData.number) {
+                    cardData.fullName = `${cardData.name} ${cardData.setCode} ${cardData.number}`;
+                } else if (cardData.setCode) {
+                    cardData.fullName = `${cardData.name} ${cardData.setCode}`;
+                } else {
+                    cardData.fullName = cardData.name;
+                }
+            }
+
             if (currentSection === 'pokemon') {
                 deck.pokemon.push(cardData);
             } else if (currentSection === 'trainers') {
@@ -303,7 +325,10 @@ function isTrainerCard(cardLine) {
     const trainerKeywords = [
         'Professor', 'Boss', 'Iono', 'Arven', 'Nest Ball', 'Ultra Ball',
         'Rare Candy', 'Switch', 'Town Store', 'Technical Machine',
-        'Pokégear', 'Poké Ball', 'Super Rod', 'Counter Catcher'
+        'Pokégear', 'Poké Ball', 'Super Rod', 'Counter Catcher',
+        'Retrieval', 'Search', 'Recycler', 'Removal', 'Lure', 'Restore',
+        'Reset', 'Transfer', 'Flow', 'Exchanger', 'Spinner', 'Pointer',
+        'Compressor', 'Condenser', 'Generator', 'Urn', 'Amplifier', 'Stadium'
     ];
     
     return trainerKeywords.some(keyword => 

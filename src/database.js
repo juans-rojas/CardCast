@@ -238,7 +238,7 @@ class CardDatabase {
         
         // Search statement
         this.searchStmt = this.db.prepare(`
-            SELECT id, name, set_name, set_abbreviation, card_number, image_url, local_image, rarity, card_type, 
+            SELECT id, name, set_name, set_abbreviation, card_number, image_url, local_image, rarity, card_type, stage, 
                    hp, mana_cost, attack, defense, cost
             FROM cards 
             WHERE game = ? AND search_text LIKE ?
@@ -250,7 +250,7 @@ class CardDatabase {
         
         // Search with set abbreviation
         this.searchWithSetStmt = this.db.prepare(`
-            SELECT id, name, set_name, set_abbreviation, card_number, image_url, local_image, rarity, card_type, 
+            SELECT id, name, set_name, set_abbreviation, card_number, image_url, local_image, rarity, card_type, stage, 
                    hp, mana_cost, attack, defense, cost
             FROM cards 
             WHERE game = ? 
@@ -263,7 +263,7 @@ class CardDatabase {
         
         // Search with set abbreviation but no number
         this.searchWithSetNoNumberStmt = this.db.prepare(`
-            SELECT id, name, set_name, set_abbreviation, card_number, image_url, local_image, rarity, card_type, 
+            SELECT id, name, set_name, set_abbreviation, card_number, image_url, local_image, rarity, card_type, stage, 
                    hp, mana_cost, attack, defense, cost
             FROM cards 
             WHERE game = ? 

@@ -79,13 +79,13 @@ class TCGApi {
         }
     }
     
-    async downloadGameData(game, progressCallback, incremental = false, setCount = 'all') {
+    async downloadGameData(game, progressCallback, incremental = false, setSpec = 'all', useHighRes = false) {
         const config = this.gameConfigs[game];
         if (!config) {
             throw new Error(`Unsupported game: ${game}`);
         }
         
-        console.log(`Starting ${incremental ? 'incremental update' : 'full download'} for ${config.name} (${setCount} sets)...`);
+        console.log(`Starting ${incremental ? 'incremental update' : 'full download'} for ${config.name} (${Array.isArray(setSpec) ? setSpec.length : setSpec} sets)...`);
         progressCallback({ status: 'starting', percent: 0, message: incremental ? 'Preparing update...' : 'Preparing download...' });
         
         try {
@@ -118,13 +118,13 @@ class TCGApi {
             // Fetch cards based on game
             switch(game) {
                 case 'pokemon':
-                    cards = await this.fetchPokemonCards(progressCallback, incremental, setCount);
+                    cards = await this.fetchPokemonCards(progressCallback, incremental, setSpec, useHighRes);
                     break;
                 case 'magic':
-                    cards = await this.fetchMagicCards(progressCallback, incremental, setCount);
+                    cards = await this.fetchMagicCards(progressCallback, incremental, setSpec, useHighRes);
                     break;
                 case 'yugioh':
-                    cards = await this.fetchYugiohCards(progressCallback, incremental, setCount);
+                    cards = await this.fetchYugiohCards(progressCallback, incremental, setSpec, useHighRes);
                     break;
                 default:
                     // For unsupported games, generate sample data for testing
@@ -183,8 +183,40 @@ class TCGApi {
         }
     }
     
-    async fetchPokemonCards(progressCallback, incremental = false, setCount = 'all') {
-        console.log(`Starting Pokemon card fetch (${incremental ? 'incremental' : 'full'}, ${setCount} sets)...`);
+    async fetchPokemonSets() {
+        const setsResponse = await axios.get('https://api.pokemontcg.io/v2/sets', {
+            params: {
+                orderBy: '-releaseDate',
+                pageSize: 250
+            },
+            timeout: 30000,
+            headers: {
+                'User-Agent': 'CardCast/1.0.0',
+                'Accept': 'application/json'
+            }
+        });
+
+        if (setsResponse.data && setsResponse.data.data) {
+            return setsResponse.data.data
+                .filter(set => set.series !== 'Other' && !set.name?.includes('Promo'))
+                .filter(set => {
+                    const lowerName = set.name?.toLowerCase() || '';
+                    return set.id !== 'sve' && set.id !== 'sme' && !lowerName.includes('energies') && !lowerName.includes('energy');
+                })
+                .map(set => ({
+                    id: set.id,
+                    name: set.name,
+                    releaseDate: set.releaseDate || '',
+                    series: set.series || '',
+                    ptcgoCode: set.ptcgoCode || ''
+                }));
+        }
+
+        throw new Error('No sets data received from Pokemon TCG API');
+    }
+
+    async fetchPokemonCards(progressCallback, incremental = false, setCount = 'all', useHighRes = false) {
+        console.log(`Starting Pokemon card fetch (${incremental ? 'incremental' : 'full'}, ${Array.isArray(setCount) ? setCount.length : setCount} sets)...`);
         const cards = [];
         const cardMap = new Map();
         
@@ -237,7 +269,15 @@ class TCGApi {
             // Determine which sets to fetch
             let setsToFetch = [];
             
-            if (incremental) {
+            if (Array.isArray(setCount)) {
+                const selectedSetIds = new Set(setCount);
+                setsToFetch = allSets.filter(set => selectedSetIds.has(set.id));
+                console.log(`Selected sets requested: ${Array.from(selectedSetIds).join(', ')}`);
+                
+                if (setsToFetch.length === 0) {
+                    throw new Error('No matching Pokemon sets were found for the selected set IDs.');
+                }
+            } else if (incremental) {
                 const downloadedSets = this.getDownloadedSets('pokemon');
                 console.log(`Already have ${downloadedSets.size} sets in database`);
                 
@@ -311,7 +351,7 @@ class TCGApi {
                                         set_code: card.set?.id || set.id,
                                         set_abbreviation: setAbbreviation,
                                         card_number: card.number || '',
-                                        image_url: card.images?.large || card.images?.small || '',
+                                        image_url: useHighRes ? (card.images?.large || card.images?.small || '') : (card.images?.small || card.images?.large || ''),
                                         rarity: card.rarity || 'Common',
                                         card_type: card.supertype || 'Pokemon',
                                         card_text: this.buildPokemonText(card),
@@ -409,7 +449,7 @@ class TCGApi {
                                     set_code: card.set?.id || energySetToFetch.id,
                                     set_abbreviation: setAbbreviation,
                                     card_number: card.number || '',
-                                    image_url: card.images?.large || card.images?.small || '',
+                                    image_url: useHighRes ? (card.images?.large || card.images?.small || '') : (card.images?.small || card.images?.large || ''),
                                     rarity: card.rarity || 'Common',
                                     card_type: card.supertype || 'Energy',
                                     card_text: this.buildPokemonText(card),
@@ -499,7 +539,7 @@ class TCGApi {
         }
     }
 
-    async downloadMTGCards(incremental = false, setCount = 'all', progressCallback) {
+    async downloadMTGCards(incremental = false, setCount = 'all', progressCallback, useHighRes = false) {
         console.log(`Starting MTG download (${incremental ? 'incremental' : 'full'}, ${setCount} sets)...`);
         
         const cards = [];
@@ -591,7 +631,7 @@ class TCGApi {
                             // Parse and add cards
                             setCards.forEach(card => {
                                 if (!cardMap.has(card.id)) {
-                                    const parsedCard = this.parseMagicCard(card);
+                                    const parsedCard = this.parseMagicCard(card, useHighRes);
                                     cardMap.set(card.id, parsedCard);
                                 }
                             });
@@ -629,8 +669,8 @@ class TCGApi {
         }
     }
         
-    async fetchMagicCards(progressCallback, incremental = false, setCount = 'all') {
-        return await this.downloadMTGCards(incremental, setCount, progressCallback);
+    async fetchMagicCards(progressCallback, incremental = false, setCount = 'all', useHighRes = false) {
+        return await this.downloadMTGCards(incremental, setCount, progressCallback, useHighRes);
     }
     
     async fetchYugiohCards(progressCallback, incremental = false, setCount = 'all') {
@@ -972,7 +1012,7 @@ class TCGApi {
         return data;
     }
     
-    parseMagicCard(data) {
+    parseMagicCard(data, useHighRes = false) {
         try {
             // Scryfall provides comprehensive data
             const searchText = [
@@ -983,11 +1023,17 @@ class TCGApi {
     
             // Handle double-faced cards (they have card_faces array)
             const frontFace = data.card_faces ? data.card_faces[0] : data;
-            const imageUrl = data.image_uris?.normal || 
+            const imageUrl = useHighRes ? 
+                            (data.image_uris?.normal || 
                             frontFace.image_uris?.normal || 
                             data.image_uris?.large ||
                             frontFace.image_uris?.large ||
-                            null;
+                            null) :
+                            (data.image_uris?.small || 
+                            frontFace.image_uris?.small || 
+                            data.image_uris?.normal || 
+                            frontFace.image_uris?.normal || 
+                            null);
     
             const card = {
                 id: `magic_${data.id}`,

@@ -1,16 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1920, height=1080">
     <title>CardCast - Pokemon Match Overlay</title>
     <style>
+        @keyframes overlayFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes overlayFadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: scale(0.9) translateY(10px);
+            }
+        }
+
+        .active-pokemon-row {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            justify-content: center;
+            height: 290px;
+            width: 100%;
+        }
+
+        #player1Active,
+        #player2Active {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .played-trainer-card {
+            height: 260px;
+            width: 186px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            display: none;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .played-trainer-card.active {
+            display: block;
+            animation: overlayFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .played-trainer-card.fading-out {
+            display: block;
+            animation: overlayFadeOut 0.3s ease-in forwards;
+        }
+
+        .played-trainer-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             width: 1920px;
             height: 1080px;
@@ -19,7 +91,7 @@
             overflow: hidden;
             position: relative;
         }
-        
+
         /* Stadium Card Display - Top Center */
         .stadium-display {
             position: absolute;
@@ -38,111 +110,158 @@
             display: none;
             position: relative;
         }
-        
+
         .stadium-display.active {
             opacity: 1;
             display: block;
         }
-        
+
         /* Stadium image fills entire container */
         .stadium-display img {
             width: 100%;
             height: auto;
             position: absolute;
-            top: 0%;  /* Adjust to show name area and top of art */
+            top: 0%;
+            /* Adjust to show name area and top of art */
             left: 0;
             right: 0%;
-            transform: scale(1.05);  /* Zoom to fill width and make name readable */
+            transform: scale(1.05);
+            /* Zoom to fill width and make name readable */
         }
-        
+
         /* Player boards - vertical panels on sides */
         .player-board {
             position: absolute;
-            width: 360px;
-            height: 900px;  /* Set a fixed height */
+            width: 400px;
+            height: auto;
+            /* Scaled and auto-wrapped height */
             display: flex;
             flex-direction: column;
             opacity: 0;
             transition: all 0.5s ease;
         }
-        
+
         .player-board.active {
             opacity: 1;
         }
-        
+
         .player-board.left {
             left: 20px;
-            top: 50%;  /* Center vertically */
-            transform: translateX(-380px) translateY(-56%);  /* Center and hide */
+            top: 50%;
+            /* Center vertically */
+            transform: translateX(-420px) translateY(-56%);
+            /* Center and hide */
         }
-        
+
         .player-board.left.active {
-            transform: translateX(0) translateY(-56%);  /* Center and show */
+            transform: translateX(0) translateY(-56%);
+            /* Center and show */
         }
-        
+
         .player-board.right {
             right: 20px;
-            top: 50%;  /* Center vertically */
-            transform: translateX(380px) translateY(-56%);  /* Center and hide */
+            top: 50%;
+            /* Center vertically */
+            transform: translateX(420px) translateY(-56%);
+            /* Center and hide */
         }
-        
+
         .player-board.right.active {
-            transform: translateX(0) translateY(-56%);  /* Center and show */
+            transform: translateX(0) translateY(-56%);
+            /* Center and show */
         }
-        
+
         /* Player Header - with record */
         .player-header {
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
             border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 12px;
+            padding: 12px;
+            margin-bottom: 6px;
             border: 2px solid #3b82f6;
             backdrop-filter: blur(10px);
         }
-        
+
         .player-board.right .player-header {
             border-color: #ef4444;
         }
-        
+
+        /* Player Header Turn Highlighting */
+        .player-board.left.active-turn .player-header {
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
+            border-color: #60a5fa;
+            border-width: 6px;
+            animation: pulse-blue 2s infinite ease-in-out;
+        }
+
+        .player-board.right.active-turn .player-header {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+            border-color: #f87171;
+            border-width: 6px;
+            animation: pulse-red 2s infinite ease-in-out;
+        }
+
+
+        @keyframes pulse-blue {
+            0%, 100% {
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+                border-color: #3b82f6;
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+                border-color: #93c5fd;
+            }
+        }
+
+        @keyframes pulse-red {
+            0%, 100% {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+                border-color: #ef4444;
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+                border-color: #fca5a5;
+            }
+        }
+
         .player-name-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
         }
-        
+
         .player-name {
             font-size: 22px;
             font-weight: bold;
             color: white;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
-        
+
         .player-record {
             font-size: 16px;
             color: #94a3b8;
             font-weight: bold;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             padding: 4px 10px;
             border-radius: 6px;
         }
-        
+
         .player-stats {
             display: flex;
             justify-content: space-between;
             gap: 10px;
         }
-        
+
         .stat-item {
             flex: 1;
             text-align: center;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             padding: 6px;
             border-radius: 6px;
         }
-        
+
         .stat-label {
             font-size: 11px;
             color: #94a3b8;
@@ -150,18 +269,18 @@
             letter-spacing: 0.5px;
             display: block;
         }
-        
+
         .stat-value {
             font-size: 24px;
             font-weight: bold;
             color: #3b82f6;
             display: block;
         }
-        
+
         .player-board.right .stat-value {
             color: #ef4444;
         }
-        
+
         /* Match Score Display */
         .match-score {
             background: rgba(16, 185, 129, 0.2);
@@ -174,19 +293,18 @@
             text-align: center;
             margin-bottom: 8px;
         }
-        
+
         /* Active Pokemon Section */
         .active-pokemon {
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
             border: 2px solid #6366f1;
             border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 12px;
+            padding: 10px;
+            margin-bottom: 6px;
             backdrop-filter: blur(10px);
-            flex: 1;
-            max-height: 440px;
+            max-height: 330px;
         }
-        
+
         .section-title {
             font-size: 13px;
             color: #94a3b8;
@@ -196,70 +314,421 @@
             text-align: center;
             font-weight: 600;
         }
-        
+
         .active-card {
             position: relative;
-            height: calc(100% - 30px);
+            width: 100%;
+            max-width: 186px;
+            aspect-ratio: 186 / 260;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0 auto;
         }
-        
+
         .active-card img {
             width: 100%;
             height: 100%;
-            max-height: 390px;
+            max-height: 260px;
             object-fit: contain;
             border-radius: 10px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
         }
-        
-        .hp-overlay {
-            position: absolute;
-            bottom: 12px;
-            left: 12px;
-            right: 12px;
-            background: linear-gradient(135deg, rgba(0,0,0,0.98) 0%, rgba(20,20,30,0.98) 100%);
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 10px;
-            padding: 10px;
-            backdrop-filter: blur(10px);
+
+        .hp-overlay-title {
+            width: 100%;
+            text-transform: none;
+            letter-spacing: normal;
         }
-        
+
         .hp-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             color: white;
             font-size: 14px;
             font-weight: bold;
-            margin-bottom: 6px;
-            text-align: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            margin-bottom: 3px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
-        
+
         .hp-bar {
             height: 14px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 7px;
             overflow: hidden;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+            border: 1px solid #000;
+            position: relative;
         }
-        
+
         .hp-fill {
             height: 100%;
             background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-            transition: width 0.3s ease;
+            transition: width 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, background 0.4s ease;
             box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
-        
+
         .hp-fill.low {
             background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
             box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
         }
-        
+
         .hp-fill.critical {
             background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
         }
-        
+
+        .hp-fill.hit {
+            animation: hpHitPulse 0.9s ease forwards;
+            box-shadow: 0 0 18px rgba(239, 68, 68, 0.75);
+        }
+
+        .hp-fill.heal {
+            animation: hpHealPulse 0.9s ease forwards;
+            box-shadow: 0 0 18px rgba(16, 185, 129, 0.75);
+        }
+
+        .bench-slot.hit .hp-fill {
+            animation: hpHitPulse 0.9s ease forwards;
+            box-shadow: 0 0 18px rgba(239, 68, 68, 0.75);
+        }
+
+        .bench-slot.heal .hp-fill {
+            animation: hpHealPulse 0.9s ease forwards;
+            box-shadow: 0 0 18px rgba(16, 185, 129, 0.75);
+        }
+
+        @keyframes hpHitPulse {
+            0% {
+                transform: scaleX(1);
+            }
+
+            20% {
+                transform: scaleX(1.04);
+            }
+
+            50% {
+                transform: scaleX(1.02);
+            }
+
+            100% {
+                transform: scaleX(1);
+            }
+        }
+
+        @keyframes hpHealPulse {
+            0% {
+                transform: scaleX(1);
+            }
+
+            20% {
+                transform: scaleX(1.04);
+            }
+
+            50% {
+                transform: scaleX(1.02);
+            }
+
+            100% {
+                transform: scaleX(1);
+            }
+        }
+
+        @keyframes benchHitPulse {
+            0% {
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+
+            20% {
+                border-color: rgba(239, 68, 68, 0.9);
+            }
+
+            50% {
+                border-color: rgba(239, 68, 68, 0.6);
+            }
+
+            100% {
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        @keyframes benchHealPulse {
+            0% {
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+
+            20% {
+                border-color: rgba(16, 185, 129, 0.9);
+            }
+
+            50% {
+                border-color: rgba(16, 185, 129, 0.6);
+            }
+
+            100% {
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        /* Evolve flash styles */
+        .evolve-flash {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            padding: 0.6rem 1.5rem;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5);
+            border: 2px solid #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            white-space: nowrap;
+        }
+
+        .bench-evolve-flash {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            padding: 0.3rem 0.6rem;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+            border: 1px solid #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            white-space: nowrap;
+        }
+
+        .evolve-flash.animate {
+            animation: evolvePulseActive 1.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .bench-evolve-flash.animate {
+            animation: evolvePulseBench 1.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes evolvePulseActive {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+
+            15% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+
+            25% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            75% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            90% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+        }
+
+        @keyframes evolvePulseBench {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+
+            15% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+
+            25% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            75% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            90% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.7);
+            }
+        }
+
+        /* KO overlay styles */
+        .ko-flash {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            padding: 0.6rem 1.5rem;
+            border-radius: 9999px;
+            background: #000000;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5);
+            border: 2px solid #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            white-space: nowrap;
+            display: none;
+        }
+
+        .bench-ko-flash {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            padding: 0.3rem 0.6rem;
+            border-radius: 9999px;
+            background: #000000;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            border: 1px solid #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            white-space: nowrap;
+            display: none;
+        }
+
+        .ko-flash.active {
+            display: block;
+            animation: koPulseActive 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .bench-ko-flash.active {
+            display: block;
+            animation: koPulseBench 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes koPulseActive {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes koPulseBench {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes cardEvolveGlow {
+            0% {
+                box-shadow: 0 0 0px rgba(245, 158, 11, 0);
+                filter: brightness(1);
+            }
+
+            20% {
+                box-shadow: 0 0 40px rgba(245, 158, 11, 1);
+                filter: brightness(1.3);
+            }
+
+            40% {
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(245, 158, 11, 0.8);
+                filter: brightness(1.1);
+            }
+
+            80% {
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 30px rgba(245, 158, 11, 0.6);
+                filter: brightness(1.05);
+            }
+
+            100% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+                filter: brightness(1);
+            }
+        }
+
+        .active-card.evolving img {
+            animation: cardEvolveGlow 1.8s ease forwards;
+        }
+
+        @keyframes benchCardEvolveGlow {
+            0% {
+                box-shadow: 0 0 0px rgba(245, 158, 11, 0);
+                filter: brightness(1);
+            }
+
+            20% {
+                box-shadow: 0 0 25px rgba(245, 158, 11, 1);
+                filter: brightness(1.3);
+            }
+
+            40% {
+                box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px rgba(245, 158, 11, 0.8);
+                filter: brightness(1.1);
+            }
+
+            80% {
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.6), 0 0 15px rgba(245, 158, 11, 0.6);
+                filter: brightness(1.05);
+            }
+
+            100% {
+                box-shadow: none;
+                filter: brightness(1);
+            }
+        }
+
+        .bench-slot.evolving img {
+            animation: benchCardEvolveGlow 1.8s ease forwards;
+        }
+
         .no-active {
             height: 100%;
             display: flex;
@@ -267,41 +736,32 @@
             justify-content: center;
             color: #64748b;
             font-size: 16px;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
         }
-        
+
         /* Bench Section - supports 5-7 cards */
         .bench-section {
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
             border: 2px solid rgba(99, 102, 241, 0.5);
             border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 12px;
+            padding: 10px;
+            margin-bottom: 6px;
             backdrop-filter: blur(10px);
         }
-        
+
         .bench-cards {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 6px;
-            justify-content: center;
+            justify-items: center;
             align-items: center;
             min-height: 90px;
         }
-        
-        /* Default 5 bench layout */
-        .bench-cards.bench-5 .bench-slot {
-            width: 60px;
-            height: 84px;
-        }
-        
-        /* 7 bench layout - smaller cards to fit */
-        .bench-cards.bench-7 .bench-slot {
-            width: 46px;
-            height: 64px;
-        }
-        
+
         .bench-slot {
+            width: 90px !important;
+            height: 126px !important;
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
@@ -310,95 +770,139 @@
             transition: all 0.2s ease;
             flex-shrink: 0;
         }
-        
+
         .bench-slot:hover {
             transform: scale(1.05);
             border-color: rgba(99, 102, 241, 0.5);
         }
-        
+
         .bench-slot.empty {
             background: rgba(255, 255, 255, 0.02);
             border-style: dashed;
         }
-        
+
         .bench-slot img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
+        .bench-hpbar {
+            position: absolute;
+            bottom: 8px;
+            left: 6px;
+            right: 6px;
+            height: 14px;
+            border-radius: 7px;
+            overflow: hidden;
+            background: #000;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+            z-index: 15;
+            /* Ensure HP bar is above the used ability marker overlay */
+        }
+
+        .bench-hpbar .hp-bar {
+            height: 100%;
+            border: none;
+            border-radius: inherit;
+            box-shadow: none;
+            background: transparent;
+            position: relative;
+        }
+
         .bench-hp {
             position: absolute;
-            bottom: 2px;
-            left: 0;
-            right: 0;
-            background: rgba(0,0,0,0.95);
-            color: #10b981;
-            font-size: 10px;
-            text-align: center;
-            padding: 2px;
-            font-weight: bold;
-        }
-        
-        /* Prize Cards Section */
-        .prizes-section {
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
-            border: 2px solid rgba(99, 102, 241, 0.5);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 12px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .prize-cards-container {
-            display: flex;
-            gap: 5px;
-            justify-content: center;
-        }
-        
-        .prize-card {
-            width: 52px;
-            height: 73px;
-            background: linear-gradient(135deg, #3b4cca 0%, #1a237e 100%);
-            border: 2px solid #667eea;
-            border-radius: 6px;
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            color: white;
+            font-size: 9px;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 16;
+            /* Ensure HP text is above the used ability marker overlay and fill */
         }
-        
-        .prize-card:hover:not(.taken) {
-            transform: scale(1.1);
-            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.5);
+
+        /* Prize Cards Section */
+        .prize-cards-container {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 8px;
         }
-        
-        .prize-card::before {
-            content: '';
-            position: absolute;
-            width: 24px;
-            height: 24px;
-            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+
+        .prize-card {
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
+            border: 2px solid #000;
+            background: linear-gradient(180deg, #ef4444 50%, #ffffff 50%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
         }
-        
+
+        .prize-card:hover:not(.taken) {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Pokeball middle black line */
+        .prize-card::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #000;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        /* Pokeball center button */
+        .prize-card::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: #ffffff;
+            border: 2px solid #000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
         .prize-card.taken {
-            opacity: 0.2;
-            background: #1a1a1a;
-            border-color: #333;
+            opacity: 0.15;
+            filter: grayscale(0.8) contrast(0.5);
+            background: #4b5563 !important;
+            /* Dimmed state */
+            border-color: #22222a;
             box-shadow: none;
         }
-        
-        .prize-card.taken::after {
-            content: '✕';
-            position: absolute;
-            font-size: 28px;
-            color: #ef4444;
-            font-weight: bold;
+
+        .prize-card.penalty {
+            background: linear-gradient(180deg, #7f1d1d 50%, #3b0a0a 50%) !important;
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.8), 0 3px 6px rgba(0, 0, 0, 0.5) !important;
+            opacity: 1 !important;
+            filter: none !important;
         }
-        
+
+        .prize-card.penalty::after {
+            background: #dc2626;
+            border-color: #7f1d1d;
+        }
+
         /* Turn Actions Indicators */
         .turn-actions {
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
@@ -410,22 +914,22 @@
             justify-content: space-around;
             gap: 8px;
         }
-        
+
         .action-indicator {
             flex: 1;
             text-align: center;
             padding: 6px;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 6px;
             border: 2px solid transparent;
             transition: all 0.3s ease;
         }
-        
+
         .action-indicator.active {
             border-color: #10b981;
             background: rgba(16, 185, 129, 0.2);
         }
-        
+
         .action-label {
             font-size: 10px;
             color: #64748b;
@@ -434,28 +938,60 @@
             display: block;
             margin-bottom: 4px;
         }
-        
+
         .action-indicator.active .action-label {
             color: #10b981;
         }
-        
+
         .action-icon {
             font-size: 20px;
             opacity: 0.3;
         }
-        
+
         .action-indicator.active .action-icon {
             opacity: 1;
             color: #10b981;
         }
-        
+
+        /* Custom Text display above the Timer Info Box */
+        .custom-overlay-text {
+            position: absolute;
+            bottom: 124px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.95);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.98) 0%, rgba(20, 20, 30, 0.98) 100%);
+            border: 2px solid #6366f1;
+            color: #00d4ff;
+            font-size: 15px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 6px 18px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        .custom-overlay-text.active {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+            visibility: visible;
+        }
+
         /* Match info bar at bottom */
         .match-info {
             position: absolute;
-            bottom: 50px;  /* Increased from 30px to move it up from the edge */
+            bottom: 50px;
+            /* Increased from 30px to move it up from the edge */
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(135deg, rgba(0,0,0,0.98) 0%, rgba(20,20,30,0.98) 100%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.98) 0%, rgba(20, 20, 30, 0.98) 100%);
             border: 2px solid #6366f1;
             border-radius: 12px;
             padding: 14px 30px;
@@ -465,13 +1001,13 @@
             backdrop-filter: blur(10px);
             opacity: 0;
             transition: all 0.5s ease;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
         }
-        
+
         .match-info.active {
             opacity: 1;
         }
-        
+
         .match-format {
             font-size: 14px;
             color: #94a3b8;
@@ -479,15 +1015,15 @@
             letter-spacing: 1.2px;
             font-weight: 600;
         }
-        
+
         .timer {
             font-size: 36px;
             font-weight: bold;
             color: #00d4ff;
             font-family: 'Courier New', monospace;
-            text-shadow: 0 0 15px rgba(0,212,255,0.5);
+            text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
         }
-        
+
         .turn-indicator {
             padding: 8px 16px;
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -499,15 +1035,277 @@
             letter-spacing: 0.8px;
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
         }
+
+        /* Ability Used Marker on Overlay */
+        .ability-used-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-12deg) scale(0.9);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(153, 27, 27, 0.9) 100%);
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 0.5rem 1.5rem;
+            border: 3px solid white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            /* Above image (default z-index), but below HP overlay (z-index 15) */
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            white-space: nowrap;
+        }
+
+        .active-card.ability-used img {
+            filter: grayscale(0.4) brightness(0.85);
+            /* Balanced brightness, not too dark */
+            border-color: #ef4444;
+            transition: all 0.3s ease;
+        }
+
+        .active-card.ability-used .ability-used-marker {
+            opacity: 1;
+            transform: translate(-50%, -50%) rotate(-12deg) scale(1.05);
+        }
+
+        .bench-ability-used-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(239, 68, 68, 0.85);
+            /* Slightly translucent */
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.2rem 0.4rem;
+            border: 1px solid white;
+            border-radius: 4px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            /* Above image, below HP overlay */
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .bench-slot.ability-used img {
+            filter: grayscale(0.5) brightness(0.75);
+            /* Balanced brightness, not too dark */
+            transition: all 0.3s ease;
+        }
+
+        .bench-slot.ability-used .bench-ability-used-marker {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Active Pokemon attached energy bars */
+        .active-energies-bar {
+            position: absolute;
+            bottom: 12px;
+            /* Bottom edge of card, since HP overlay is at the top */
+            left: 12px;
+            right: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        @font-face {
+            font-family: 'EssentiarumTCG';
+            src: url('/fonts/EssentiarumTCG.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        .active-energy-bar {
+            background: #ffffff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            animation: fadeInBar 0.3s ease forwards;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .active-energy-icon {
+            font-family: 'EssentiarumTCG', sans-serif;
+            font-size: 16px;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        @keyframes fadeInBar {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Active Pokemon attached tools bar */
+        .active-tools-bar {
+            position: absolute;
+            bottom: 40px;
+            /* Stacked cleanly above energies at bottom: 12px */
+            left: 12px;
+            right: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .active-tool-bar {
+            background: rgba(6, 78, 59, 0.85);
+            /* Dark green/emerald background */
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 7px 2px 5px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+            white-space: nowrap;
+            animation: fadeInBar 0.3s ease forwards;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .active-tool-icon {
+            font-size: 11px;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        .active-tool-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+        }
+
+        /* Bench energy indicators */
+        .bench-energies-bar {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.80);
+            padding: 2px 3px;
+            border-radius: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            max-width: 80px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            pointer-events: none;
+        }
+
+        /* Bench tool indicators */
+        .bench-tools-bar {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 20;
+            background: rgba(6, 78, 59, 0.90);
+            padding: 2px 3px;
+            border-radius: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            max-width: 80px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            pointer-events: none;
+        }
+
+        .bench-tool-pip {
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        .bench-energy-pip {
+            font-family: 'EssentiarumTCG', sans-serif;
+            font-size: 13px;
+            font-weight: normal;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        /* Centered Player Animations */
+        .animation-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .animation-overlay.active {
+            opacity: 0.8;
+        }
+
+        .animation-name {
+            font-size: 80px;
+            font-weight: 900;
+            color: #f59e0b;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.6), 0 4px 10px rgba(0, 0, 0, 0.9);
+            margin-bottom: 10px;
+            font-family: 'Impact', 'Segoe UI Black', sans-serif;
+        }
+
+        .animation-player-name {
+            font-size: 48px;
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+        }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
+
 <body>
     <!-- Stadium Display -->
     <div class="stadium-display" id="stadiumDisplay">
         <img id="stadiumImage" src="" alt="Stadium">
     </div>
-    
+
     <!-- Player 1 Board (Left) -->
     <div class="player-board left" id="player1Board">
         <div class="player-header">
@@ -516,30 +1314,6 @@
                 <div class="player-record" id="player1Record">0-0-0</div>
             </div>
             <div class="match-score" id="player1MatchScore">Games Won: 0</div>
-            <div class="player-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Prizes</span>
-                    <span class="stat-value" id="player1Prizes">6</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="active-pokemon">
-            <div class="section-title">Active Pokémon</div>
-            <div id="player1Active">
-                <div class="no-active">No Active Pokémon</div>
-            </div>
-        </div>
-        
-        <div class="bench-section">
-            <div class="section-title">Bench</div>
-            <div class="bench-cards bench-5" id="player1Bench">
-                <!-- Bench slots will be dynamically generated -->
-            </div>
-        </div>
-        
-        <div class="prizes-section">
-            <div class="section-title">Prize Cards</div>
             <div class="prize-cards-container" id="player1PrizeCards">
                 <div class="prize-card"></div>
                 <div class="prize-card"></div>
@@ -549,23 +1323,40 @@
                 <div class="prize-card"></div>
             </div>
         </div>
-        
+
+        <div class="active-pokemon">
+            <div class="section-title" id="player1ActiveTitle">Active Pokémon</div>
+            <div class="active-pokemon-row">
+                <div id="player1Active">
+                    <div class="no-active">No Active Pokémon</div>
+                </div>
+                <div class="played-trainer-card" id="player1TrainerCard"></div>
+            </div>
+        </div>
+
+        <div class="bench-section">
+            <div class="section-title" data-i18n="bench-label">Bench</div>
+            <div class="bench-cards bench-5" id="player1Bench">
+                <!-- Bench slots will be dynamically generated -->
+            </div>
+        </div>
+
         <div class="turn-actions" id="player1Actions">
             <div class="action-indicator" id="player1Energy">
-                <span class="action-label">Energy</span>
+                <span class="action-label" data-i18n="energy">Energy</span>
                 <span class="action-icon">⚡</span>
             </div>
             <div class="action-indicator" id="player1Supporter">
-                <span class="action-label">Supporter</span>
+                <span class="action-label" data-i18n="supporter">Supporter</span>
                 <span class="action-icon">👤</span>
             </div>
             <div class="action-indicator" id="player1Retreat">
-                <span class="action-label">Retreat</span>
+                <span class="action-label" data-i18n="retreat">Retreat</span>
                 <span class="action-icon">↩️</span>
             </div>
         </div>
     </div>
-    
+
     <!-- Player 2 Board (Right) -->
     <div class="player-board right" id="player2Board">
         <div class="player-header">
@@ -574,30 +1365,6 @@
                 <div class="player-record" id="player2Record">0-0-0</div>
             </div>
             <div class="match-score" id="player2MatchScore">Games Won: 0</div>
-            <div class="player-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Prizes</span>
-                    <span class="stat-value" id="player2Prizes">6</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="active-pokemon">
-            <div class="section-title">Active Pokémon</div>
-            <div id="player2Active">
-                <div class="no-active">No Active Pokémon</div>
-            </div>
-        </div>
-        
-        <div class="bench-section">
-            <div class="section-title">Bench</div>
-            <div class="bench-cards bench-5" id="player2Bench">
-                <!-- Bench slots will be dynamically generated -->
-            </div>
-        </div>
-        
-        <div class="prizes-section">
-            <div class="section-title">Prize Cards</div>
             <div class="prize-cards-container" id="player2PrizeCards">
                 <div class="prize-card"></div>
                 <div class="prize-card"></div>
@@ -607,69 +1374,166 @@
                 <div class="prize-card"></div>
             </div>
         </div>
-        
+
+        <div class="active-pokemon">
+            <div class="section-title" id="player2ActiveTitle">Active Pokémon</div>
+            <div class="active-pokemon-row">
+                <div class="played-trainer-card" id="player2TrainerCard"></div>
+                <div id="player2Active">
+                    <div class="no-active">No Active Pokémon</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bench-section">
+            <div class="section-title" data-i18n="bench-label">Bench</div>
+            <div class="bench-cards bench-5" id="player2Bench">
+                <!-- Bench slots will be dynamically generated -->
+            </div>
+        </div>
+
         <div class="turn-actions" id="player2Actions">
             <div class="action-indicator" id="player2Energy">
-                <span class="action-label">Energy</span>
+                <span class="action-label" data-i18n="energy">Energy</span>
                 <span class="action-icon">⚡</span>
             </div>
             <div class="action-indicator" id="player2Supporter">
-                <span class="action-label">Supporter</span>
+                <span class="action-label" data-i18n="supporter">Supporter</span>
                 <span class="action-icon">👤</span>
             </div>
             <div class="action-indicator" id="player2Retreat">
-                <span class="action-label">Retreat</span>
+                <span class="action-label" data-i18n="retreat">Retreat</span>
                 <span class="action-icon">↩️</span>
             </div>
         </div>
     </div>
-    
+
+    <!-- Custom Overlay Text -->
+    <div class="custom-overlay-text" id="customOverlayTextDisplay"></div>
+
     <!-- Match Info Bar -->
     <div class="match-info" id="matchInfo">
         <div class="match-format" id="matchFormat">BEST OF 3 • GAME 1</div>
         <div class="timer" id="matchTimer">50:00</div>
         <div class="turn-indicator" id="turnIndicator">Player 1's Turn</div>
     </div>
-    
+
+    <!-- Centered Animations Overlay -->
+    <div id="animationOverlay" class="animation-overlay">
+        <div id="animationName" class="animation-name"></div>
+        <div id="animationPlayerName" class="animation-player-name"></div>
+    </div>
+
     <script>
-        const socket = io('http://localhost:3888');
-        
+        const socket = io();
+
+        // EssentiarumTCG font energy type map: name → { char, color }
+        const ENERGY_ICON_MAP = {
+            'colorless': { char: 'c', color: '#e0e0e0' },
+            'darkness': { char: 'd', color: '#1a4a3a' },
+            'fighting': { char: 'f', color: '#a0522d' },
+            'grass': { char: 'g', color: '#3aaa35' },
+            'lightning': { char: 'l', color: '#f5d800' },
+            'metal': { char: 'm', color: '#b0bec5' },
+            'dragon': { char: 'n', color: '#c9a227' },
+            'psychic': { char: 'p', color: '#a020f0' },
+            'fire': { char: 'r', color: '#e8381a' },
+            'water': { char: 'w', color: '#2979ff' }
+        };
+
+        function getEnergyIcon(energyName) {
+            if (!energyName) return { char: 'c', color: '#e0e0e0' };
+            // Strip " Energy" suffix if present and lowercase
+            const key = energyName.toLowerCase()
+                .replace(/\s*energy\s*$/i, '')
+                .trim();
+            return ENERGY_ICON_MAP[key] || { char: 'c', color: '#e0e0e0' };
+        }
+
+
         let matchState = {
             player1: {
                 name: 'Player 1',
                 prizes: 6,
                 prizesTaken: [],
+                penaltyPrizes: [false, false, false, false, false, false],
                 active: null,
                 bench: [],
                 benchSize: 5,
                 record: { wins: 0, losses: 0, ties: 0 },
                 matchScore: 0,
-                turnActions: { energy: false, supporter: false, retreat: false }
+                turnActions: { energy: false, supporter: false, retreat: false },
+                prevActiveHp: null,
+                prevBenchHps: []
             },
             player2: {
                 name: 'Player 2',
                 prizes: 6,
                 prizesTaken: [],
+                penaltyPrizes: [false, false, false, false, false, false],
                 active: null,
                 bench: [],
                 benchSize: 5,
                 record: { wins: 0, losses: 0, ties: 0 },
                 matchScore: 0,
-                turnActions: { energy: false, supporter: false, retreat: false }
+                turnActions: { energy: false, supporter: false, retreat: false },
+                prevActiveHp: null,
+                prevBenchHps: []
             },
             currentTurn: 1,
             timer: { minutes: 50, seconds: 0 },
+            timerRunning: false,
             timerInterval: null,
             gameNumber: 1,
             matchFormat: 'Best of 3',
             stadium: null,
-            visible: false
+            visible: false,
+            customText: '',
+            activeAnimation: null,
+            language: 'en'
         };
-        
-        // Socket event handlers
-        socket.on('pokemon-match-update', (data) => {
-            console.log('Pokemon match update received:', data);
+
+        let translations = null;
+
+        async function fetchTranslations() {
+            try {
+                const response = await fetch('/translations.json');
+                translations = await response.json();
+                console.log('Overlay translations loaded:', translations);
+            } catch (err) {
+                console.error('Failed to load translations:', err);
+            }
+        }
+
+        function getTrans(key) {
+            const lang = matchState.language || 'en';
+            if (translations && translations[lang] && translations[lang][key]) {
+                return translations[lang][key];
+            }
+            if (translations && translations['en'] && translations['en'][key]) {
+                return translations['en'][key];
+            }
+            return key;
+        }
+
+        function applyTranslations() {
+            // Apply simple static elements translations
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const translation = getTrans(key);
+                if (translation && translation !== key) {
+                    el.innerHTML = translation;
+                }
+            });
             
+            // Force re-renders for templated UI
+            updateDisplay();
+        }
+
+        const handleMatchUpdate = (data) => {
+            console.log('Pokemon match update received:', data);
+            if (!data) return;
+
             // Update player 1
             if (data.player1) {
                 // Merge basic data
@@ -678,7 +1542,7 @@
                         matchState.player1[key] = data.player1[key];
                     }
                 });
-                
+
                 // Handle prizes specially
                 if (data.player1.prizesTaken !== undefined) {
                     matchState.player1.prizesTaken = data.player1.prizesTaken;
@@ -692,7 +1556,7 @@
                     }
                 }
             }
-            
+
             // Update player 2
             if (data.player2) {
                 // Merge basic data
@@ -701,7 +1565,7 @@
                         matchState.player2[key] = data.player2[key];
                     }
                 });
-                
+
                 // Handle prizes specially
                 if (data.player2.prizesTaken !== undefined) {
                     matchState.player2.prizesTaken = data.player2.prizesTaken;
@@ -715,7 +1579,7 @@
                     }
                 }
             }
-            
+
             // Update other data
             if (data.stadium !== undefined) {
                 matchState.stadium = data.stadium;
@@ -729,60 +1593,103 @@
             if (data.matchFormat !== undefined) {
                 matchState.matchFormat = data.matchFormat;
             }
-            
+            if (data.timer !== undefined) {
+                matchState.timer = data.timer;
+            }
+            if (data.timerRunning !== undefined) {
+                matchState.timerRunning = data.timerRunning;
+                if (matchState.timerRunning) {
+                    startTimer();
+                } else {
+                    pauseTimer();
+                }
+            }
+            if (data.customText !== undefined) {
+                matchState.customText = data.customText;
+            }
+            if (data.activeAnimation !== undefined) {
+                matchState.activeAnimation = data.activeAnimation;
+            }
+            if (data.language !== undefined) {
+                const oldLang = matchState.language;
+                matchState.language = data.language;
+                if (oldLang !== data.language) {
+                    applyTranslations();
+                }
+            }
+            if (data.showOverlay !== undefined) {
+                matchState.visible = data.showOverlay;
+                if (matchState.visible) {
+                    showOverlay();
+                } else {
+                    hideOverlay();
+                }
+            }
+
             // Always update display
             updateDisplay();
-        });
-        
+        };
+
+        // Socket event handlers
+        socket.on('pokemon-match-update', handleMatchUpdate);
+        socket.on('pokemon-match-state', handleMatchUpdate);
+
         socket.on('stadium-update', (data) => {
             console.log('Stadium update received:', data.stadium);
             matchState.stadium = data.stadium;
             updateStadiumDisplay();
         });
-        
+
         socket.on('record-update', (data) => {
             const player = `player${data.player}`;
             matchState[player].record = data.record;
             updatePlayerRecord(data.player);
         });
-        
+
         socket.on('match-score-update', (data) => {
             const player = `player${data.player}`;
             matchState[player].matchScore = data.score;
             updateMatchScore(data.player);
         });
-        
+
         socket.on('turn-actions-update', (data) => {
             const player = `player${data.player}`;
             matchState[player].turnActions = data.actions;
             updateTurnActions(data.player);
         });
-        
+
         socket.on('turn-actions-reset', () => {
             matchState.player1.turnActions = { energy: false, supporter: false, retreat: false };
             matchState.player2.turnActions = { energy: false, supporter: false, retreat: false };
             updateTurnActions(1);
             updateTurnActions(2);
         });
-        
+
         socket.on('bench-size-update', (data) => {
             const player = `player${data.player}`;
             matchState[player].benchSize = data.size;
             updateBenchDisplay(data.player);
         });
-        
+
         socket.on('active-pokemon', (data) => {
             const player = `player${data.player}`;
             matchState[player].active = data.pokemon;
             updateActiveDisplay(data.player);
         });
-        
+
         socket.on('bench-update', (data) => {
             const player = `player${data.player}`;
             matchState[player].bench = data.bench;
             updateBenchDisplay(data.player);
         });
-        
+
+        socket.on('pokemon-evolved', (data) => {
+            console.log('Pokemon evolved received:', data);
+            setTimeout(() => {
+                triggerEvolutionAnimation(data.player, data.slot, data.benchIndex);
+            }, 50);
+        });
+
         socket.on('prize-taken', (data) => {
             const player = `player${data.player}`;
             if (!matchState[player].prizesTaken.includes(data.index)) {
@@ -792,7 +1699,7 @@
             updatePrizeDisplay(data.player);
             updatePlayerInfo(data.player);
         });
-        
+
         socket.on('prizes-reset', () => {
             matchState.player1.prizesTaken = [];
             matchState.player1.prizes = 6;
@@ -803,48 +1710,70 @@
             updatePlayerInfo(1);
             updatePlayerInfo(2);
         });
-        
+
         socket.on('turn-switch', (data) => {
             matchState.currentTurn = data.currentTurn;
             updateMatchInfo();
         });
-        
+
         socket.on('timer-start', () => {
             startTimer();
         });
-        
+
         socket.on('timer-pause', () => {
             pauseTimer();
         });
-        
-        socket.on('timer-reset', () => {
-            console.log('Timer reset received');
-            
+
+        socket.on('timer-set', (data) => {
+            console.log('Timer set received:', data);
+            if (data) {
+                matchState.timer = data;
+                updateMatchInfo();
+            }
+        });
+
+        socket.on('timer-tick', (data) => {
+            if (data) {
+                matchState.timer = data;
+                updateMatchInfo();
+                if (!matchState.timerInterval) {
+                    startTimer();
+                }
+            }
+        });
+
+        socket.on('timer-reset', (data) => {
+            console.log('Timer reset received:', data);
+
             // Clear any existing timer interval
             if (matchState.timerInterval) {
                 clearInterval(matchState.timerInterval);
                 matchState.timerInterval = null;
             }
-            
+
             // Reset timer values
-            matchState.timer = { minutes: 50, seconds: 0 };
-            
+            if (data && typeof data.minutes === 'number') {
+                matchState.timer = { minutes: data.minutes, seconds: data.seconds || 0 };
+            } else {
+                matchState.timer = { minutes: 50, seconds: 0 };
+            }
+
             // Update display but DON'T start the timer
             updateMatchInfo();
         });
-        
+
         socket.on('match-reset', () => {
             console.log('Match reset received');
-            
+
             // Preserve visibility
             const wasVisible = matchState.visible;
-            
+
             // Clear any running timer
             if (matchState.timerInterval) {
                 clearInterval(matchState.timerInterval);
                 matchState.timerInterval = null;
             }
-            
+
             // Full reset
             matchState = {
                 player1: {
@@ -875,19 +1804,21 @@
                 gameNumber: 1,
                 matchFormat: 'Best of 3',
                 stadium: null,
-                visible: wasVisible
+                visible: wasVisible,
+                customText: '',
+                activeAnimation: null
             };
-            
+
             // Force complete update
             updateDisplay();
         });
-        
+
         socket.on('match-settings', (data) => {
             if (data.gameNumber) matchState.gameNumber = data.gameNumber;
             if (data.matchFormat) matchState.matchFormat = data.matchFormat;
             updateMatchInfo();
         });
-        
+
         socket.on('toggle-pokemon-match', (data) => {
             matchState.visible = data.show;
             if (data.show) {
@@ -896,25 +1827,29 @@
                 hideOverlay();
             }
         });
-        
+
         function showOverlay() {
             document.getElementById('player1Board').classList.add('active');
             document.getElementById('player2Board').classList.add('active');
             document.getElementById('matchInfo').classList.add('active');
             // Always update stadium display when showing overlay
             updateStadiumDisplay();
+            updateCustomTextDisplay();
+            updateAnimationDisplay();
         }
-        
+
         function hideOverlay() {
             document.getElementById('player1Board').classList.remove('active');
             document.getElementById('player2Board').classList.remove('active');
             document.getElementById('matchInfo').classList.remove('active');
             document.getElementById('stadiumDisplay').classList.remove('active');
+            updateCustomTextDisplay();
+            updateAnimationDisplay();
         }
-        
+
         function updateDisplay() {
             console.log('Updating full display with state:', matchState);
-            
+
             // Update all player info
             updatePlayerInfo(1);
             updatePlayerInfo(2);
@@ -922,34 +1857,77 @@
             updatePlayerRecord(2);
             updateMatchScore(1);
             updateMatchScore(2);
-            
+
             // Update Pokemon displays
             updateActiveDisplay(1);
             updateActiveDisplay(2);
             updateBenchDisplay(1);
             updateBenchDisplay(2);
-            
+
+            // Update trainer overlays
+            updateTrainerOverlay(1);
+            updateTrainerOverlay(2);
+
             // Update prize displays - these are critical
             updatePrizeDisplay(1);
             updatePrizeDisplay(2);
-            
+
             // Update turn actions
             updateTurnActions(1);
             updateTurnActions(2);
-            
+
             // Update match info
             updateMatchInfo();
-            
+
+            // Update custom text display
+            updateCustomTextDisplay();
+
             // Update stadium
             updateStadiumDisplay();
+
+            // Update animations display
+            updateAnimationDisplay();
         }
-        
+
+        function updateAnimationDisplay() {
+            const overlay = document.getElementById('animationOverlay');
+            const nameEl = document.getElementById('animationName');
+            const playerNameEl = document.getElementById('animationPlayerName');
+
+            if (!overlay || !nameEl || !playerNameEl) return;
+
+            const anim = matchState.activeAnimation;
+            if (matchState.visible && anim && anim.type && anim.player) {
+                const player = matchState[`player${anim.player}`];
+                const playerName = player ? player.name : `Player ${anim.player}`;
+
+                let typeTrans = anim.type;
+                if (anim.type === 'TOP DECK') typeTrans = getTrans('active-animation-top-deck');
+                else if (anim.type === 'GAME') typeTrans = getTrans('active-animation-game');
+                else if (anim.type === 'WINNER!') typeTrans = getTrans('active-animation-winner');
+                
+                nameEl.textContent = typeTrans;
+                playerNameEl.textContent = playerName;
+
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+                // Clear text content after transition completes to avoid flickering
+                setTimeout(() => {
+                    if (!matchState.activeAnimation || !matchState.visible) {
+                        nameEl.textContent = '';
+                        playerNameEl.textContent = '';
+                    }
+                }, 500);
+            }
+        }
+
         function updateStadiumDisplay() {
             const stadiumEl = document.getElementById('stadiumDisplay');
             const stadiumImage = document.getElementById('stadiumImage');
-            
+
             console.log('Updating stadium display:', matchState.stadium);
-            
+
             if (matchState.stadium) {
                 // Handle both object and string formats
                 if (typeof matchState.stadium === 'object' && matchState.stadium !== null) {
@@ -972,20 +1950,20 @@
                 stadiumEl.classList.remove('active');
             }
         }
-        
+
         function updatePlayerInfo(playerNum) {
             const player = matchState[`player${playerNum}`];
             const nameEl = document.getElementById(`player${playerNum}Name`);
             const prizesEl = document.getElementById(`player${playerNum}Prizes`);
-            
+
             if (nameEl) {
                 nameEl.textContent = player.name || `Player ${playerNum}`;
             }
-            
+
             if (prizesEl) {
                 // Always display as a number
                 let remainingPrizes = 6;
-                
+
                 if (typeof player.prizes === 'number') {
                     remainingPrizes = player.prizes;
                 } else if (Array.isArray(player.prizesTaken)) {
@@ -994,151 +1972,551 @@
 
                     remainingPrizes = player.prizes.filter(p => !p).length;
                 }
-                
+
                 prizesEl.textContent = remainingPrizes;
             }
         }
-        
+
         function updatePlayerRecord(playerNum) {
             const player = matchState[`player${playerNum}`];
             const record = player.record || { wins: 0, losses: 0, ties: 0 };
-            document.getElementById(`player${playerNum}Record`).textContent = 
+            document.getElementById(`player${playerNum}Record`).textContent =
                 `${record.wins}-${record.losses}-${record.ties}`;
         }
-        
+
         function updateMatchScore(playerNum) {
             const player = matchState[`player${playerNum}`];
-            document.getElementById(`player${playerNum}MatchScore`).textContent = 
-                `Games Won: ${player.matchScore || 0}`;
+            const gamesWonText = getTrans('games-won-overlay') || 'Games Won:';
+            document.getElementById(`player${playerNum}MatchScore`).textContent =
+                `${gamesWonText} ${player.matchScore || 0}`;
         }
-        
+
         function updateTurnActions(playerNum) {
             const player = matchState[`player${playerNum}`];
             const actions = player.turnActions || { energy: false, supporter: false, retreat: false };
-            
+
             ['Energy', 'Supporter', 'Retreat'].forEach(action => {
                 const element = document.getElementById(`player${playerNum}${action}`);
-                if (actions[action.toLowerCase()]) {
+                if (!actions[action.toLowerCase()]) {
                     element.classList.add('active');
                 } else {
                     element.classList.remove('active');
                 }
             });
         }
-        
+
+        function getHpColorClass(hpPercent) {
+            if (hpPercent <= 20) return 'critical';
+            if (hpPercent >= 80) return '';
+            return 'low';
+        }
+
+        function getHpAnimationClass(oldHp, newHp) {
+            if (oldHp === null || oldHp === undefined || newHp === null || newHp === undefined) {
+                return '';
+            }
+            if (newHp < oldHp) return 'hit';
+            if (newHp > oldHp) return 'heal';
+            return '';
+        }
+
+        function triggerOverlayAnimation(element, className) {
+            if (!element || !className) return;
+            element.classList.remove(className);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    element.classList.add(className);
+                });
+            });
+            setTimeout(() => element.classList.remove(className), 950);
+        }
+
+        function triggerEvolutionAnimation(playerNum, slot, benchIndex = null) {
+            let flash;
+            let cardContainer;
+            if (slot === 'active') {
+                cardContainer = document.querySelector(`#player${playerNum}Active .active-card`);
+                flash = document.querySelector(`#player${playerNum}Active .evolve-flash`);
+            } else {
+                cardContainer = document.querySelector(`#player${playerNum}Bench .bench-slot[data-bench-index="${benchIndex}"]`);
+                flash = document.querySelector(`#player${playerNum}Bench .bench-slot[data-bench-index="${benchIndex}"] .bench-evolve-flash`);
+            }
+
+            if (flash) {
+                flash.classList.remove('animate');
+                void flash.offsetWidth;
+                flash.classList.add('animate');
+                setTimeout(() => {
+                    flash.classList.remove('animate');
+                }, 1800);
+            }
+
+            if (cardContainer) {
+                cardContainer.classList.remove('evolving');
+                void cardContainer.offsetWidth;
+                cardContainer.classList.add('evolving');
+                setTimeout(() => {
+                    cardContainer.classList.remove('evolving');
+                }, 1800);
+            }
+        }
+
+        function renderActiveEnergies(playerNum, activeDiv, energies) {
+            const cardEl = activeDiv.querySelector('.active-card');
+            if (!cardEl) return;
+
+            const currentString = JSON.stringify(energies || []);
+            const container = cardEl.querySelector('.active-energies-bar');
+            if (container) {
+                if (container.dataset.energies === currentString) {
+                    return;
+                }
+                container.remove();
+            }
+
+            // Also clean up any legacy attached-energies-container just in case
+            const legacyContainer = cardEl.querySelector('.attached-energies-container');
+            if (legacyContainer) {
+                legacyContainer.remove();
+            }
+
+            if (!energies || energies.length === 0) return;
+
+            const newContainer = document.createElement('div');
+            newContainer.className = 'active-energies-bar';
+            newContainer.dataset.energies = currentString;
+
+            energies.forEach((energy) => {
+                let { char, color } = getEnergyIcon(energy.name);
+                if (energy.name && energy.name.toLowerCase().includes('colorless')) {
+                    color = '#000000';
+                }
+                const bar = document.createElement('div');
+                bar.className = 'active-energy-bar';
+                bar.innerHTML = `<span class="active-energy-icon" style="color:${color}">${char}</span>`;
+                newContainer.appendChild(bar);
+            });
+
+            cardEl.appendChild(newContainer);
+        }
+
+        function renderActiveTools(playerNum, activeDiv, tools) {
+            const cardEl = activeDiv.querySelector('.active-card');
+            if (!cardEl) return;
+
+            const currentString = JSON.stringify(tools || []);
+            const container = cardEl.querySelector('.active-tools-bar');
+            if (container) {
+                if (container.dataset.tools === currentString) {
+                    return;
+                }
+                container.remove();
+            }
+
+            if (!tools || tools.length === 0) return;
+
+            const newContainer = document.createElement('div');
+            newContainer.className = 'active-tools-bar';
+            newContainer.dataset.tools = currentString;
+
+            tools.forEach((tool) => {
+                const bar = document.createElement('div');
+                bar.className = 'active-tool-bar';
+                bar.innerHTML = `<span class="active-tool-icon">🔧</span><span class="active-tool-label">${tool.name}</span>`;
+                newContainer.appendChild(bar);
+            });
+
+            cardEl.appendChild(newContainer);
+        }
+
         function updateActiveDisplay(playerNum) {
             const player = matchState[`player${playerNum}`];
             const activeDiv = document.getElementById(`player${playerNum}Active`);
-            
-            if (player.active) {
-                const hpPercent = (player.active.currentHp / player.active.maxHp) * 100;
-                let hpClass = '';
-                if (hpPercent <= 20) hpClass = 'critical';
-                else if (hpPercent <= 50) hpClass = 'low';
-                
-                activeDiv.innerHTML = `
-                    <div class="active-card">
-                        <img src="${player.active.image}" alt="${player.active.name}">
-                        <div class="hp-overlay">
-                            <div class="hp-text">${player.active.currentHp}/${player.active.maxHp} HP</div>
+            const titleEl = document.getElementById(`player${playerNum}ActiveTitle`);
+            const oldHp = player.prevActiveHp;
+
+            if (!player.active) {
+                const noActiveText = getTrans('no-active-pokemon');
+                const activeTitleText = getTrans('active-pokemon-label');
+                if (activeDiv.innerHTML.trim() !== `<div class="no-active">${noActiveText}</div>`) {
+                    activeDiv.innerHTML = `<div class="no-active">${noActiveText}</div>`;
+                }
+                if (titleEl && titleEl.innerHTML !== activeTitleText) {
+                    titleEl.innerHTML = activeTitleText;
+                }
+                player.prevActiveHp = null;
+                return;
+            }
+
+            const hpPercent = player.active.maxHp > 0 ? (player.active.currentHp / player.active.maxHp) * 100 : 0;
+            const hpClass = getHpColorClass(hpPercent);
+            const animClass = getHpAnimationClass(oldHp, player.active.currentHp);
+
+            // Update/render Title HP Display
+            if (titleEl) {
+                const existingFill = titleEl.querySelector('.hp-fill');
+                if (existingFill) {
+                    const hpText = titleEl.querySelector('.hp-text');
+                    if (hpText) {
+                        hpText.innerHTML = `<span>${player.active.name}</span><span>${player.active.currentHp}/${player.active.maxHp} HP</span>`;
+                    }
+                    existingFill.style.width = `${hpPercent}%`;
+                    existingFill.classList.remove('low', 'critical', 'hit', 'heal');
+                    if (hpClass) {
+                        existingFill.classList.add(hpClass);
+                    }
+                    if (animClass) {
+                        triggerOverlayAnimation(existingFill, animClass);
+                    }
+                } else {
+                    titleEl.innerHTML = `
+                        <div class="hp-overlay-title">
+                            <div class="hp-text">
+                                <span>${player.active.name}</span>
+                                <span>${player.active.currentHp}/${player.active.maxHp} HP</span>
+                            </div>
                             <div class="hp-bar">
                                 <div class="hp-fill ${hpClass}" style="width: ${hpPercent}%"></div>
                             </div>
                         </div>
+                    `;
+                    if (animClass) {
+                        const fillEl = titleEl.querySelector('.hp-fill');
+                        triggerOverlayAnimation(fillEl, animClass);
+                    }
+                }
+            }
+
+            // Update/render Active Pokémon Card Image (without the overlay)
+            const activeCard = activeDiv.querySelector('.active-card');
+            if (activeCard) {
+                const imgEl = activeCard.querySelector('img');
+                let evolveFlash = activeCard.querySelector('.evolve-flash');
+                let koFlash = activeCard.querySelector('.ko-flash');
+                let abilityMarker = activeCard.querySelector('.ability-used-marker');
+
+                if (imgEl && imgEl.getAttribute('src') !== player.active.image) {
+                    imgEl.src = player.active.image;
+                    imgEl.alt = player.active.name;
+                }
+                if (player.active.abilityUsed) {
+                    activeCard.classList.add('ability-used');
+                } else {
+                    activeCard.classList.remove('ability-used');
+                }
+                if (!evolveFlash) {
+                    evolveFlash = document.createElement('div');
+                    evolveFlash.className = 'evolve-flash';
+                    evolveFlash.textContent = getTrans('evolve-label');
+                    activeCard.appendChild(evolveFlash);
+                } else {
+                    evolveFlash.textContent = getTrans('evolve-label');
+                }
+                if (!koFlash) {
+                    koFlash = document.createElement('div');
+                    koFlash.className = 'ko-flash';
+                    koFlash.textContent = getTrans('ko-label');
+                    activeCard.appendChild(koFlash);
+                } else {
+                    koFlash.textContent = getTrans('ko-label');
+                }
+                if (!abilityMarker) {
+                    abilityMarker = document.createElement('div');
+                    abilityMarker.className = 'ability-used-marker';
+                    abilityMarker.textContent = getTrans('ability-used-label');
+                    activeCard.appendChild(abilityMarker);
+                } else {
+                    abilityMarker.textContent = getTrans('ability-used-label');
+                }
+
+                if (koFlash) {
+                    if (player.active.isKnockedOut) {
+                        koFlash.classList.add('active');
+                    } else {
+                        koFlash.classList.remove('active');
+                    }
+                }
+
+                renderActiveEnergies(playerNum, activeDiv, player.active.energies);
+                renderActiveTools(playerNum, activeDiv, player.active.tools);
+            } else {
+                activeDiv.innerHTML = `
+                    <div class="active-card ${player.active.abilityUsed ? 'ability-used' : ''}">
+                        <img src="${player.active.image}" alt="${player.active.name}">
+                        <div class="evolve-flash">${getTrans('evolve-label')}</div>
+                        <div class="ko-flash ${player.active.isKnockedOut ? 'active' : ''}">${getTrans('ko-label')}</div>
+                        <div class="ability-used-marker">${getTrans('ability-used-label')}</div>
                     </div>
                 `;
+                renderActiveEnergies(playerNum, activeDiv, player.active.energies);
+                renderActiveTools(playerNum, activeDiv, player.active.tools);
+            }
+
+            player.prevActiveHp = player.active.currentHp;
+        }
+
+        function updateTrainerOverlay(playerNum) {
+            const playerKey = `player${playerNum}`;
+            const player = matchState[playerKey];
+            const trainerCardEl = document.getElementById(`player${playerNum}TrainerCard`);
+
+            if (!trainerCardEl) return;
+
+            const playedTrainer = player.playedTrainer;
+            const isCurrentlyActive = trainerCardEl.classList.contains('active');
+
+            if (playedTrainer) {
+                const imgEl = trainerCardEl.querySelector('img');
+                if (imgEl && imgEl.src === playedTrainer.image && isCurrentlyActive) {
+                    return;
+                }
+
+                trainerCardEl.innerHTML = `<img src="${playedTrainer.image}" alt="${playedTrainer.name}" onerror="this.src='/images/card-back.png'">`;
+                trainerCardEl.classList.remove('fading-out');
+                trainerCardEl.classList.add('active');
             } else {
-                activeDiv.innerHTML = '<div class="no-active">No Active Pokémon</div>';
+                if (isCurrentlyActive) {
+                    trainerCardEl.classList.remove('active');
+                    trainerCardEl.classList.add('fading-out');
+
+                    setTimeout(() => {
+                        if (!matchState[playerKey].playedTrainer) {
+                            trainerCardEl.classList.remove('fading-out');
+                            trainerCardEl.innerHTML = '';
+                        }
+                    }, 300);
+                } else if (!trainerCardEl.classList.contains('fading-out')) {
+                    trainerCardEl.innerHTML = '';
+                }
             }
         }
-        
+
         function updateBenchDisplay(playerNum) {
             const player = matchState[`player${playerNum}`];
             const benchDiv = document.getElementById(`player${playerNum}Bench`);
             const benchSize = player.benchSize || 5;
-            
+
+            // Ensure previous bench HP array exists and has the right length
+            if (!Array.isArray(player.prevBenchHps)) {
+                player.prevBenchHps = [];
+            }
+            while (player.prevBenchHps.length < benchSize) {
+                player.prevBenchHps.push(null);
+            }
+
             // Update bench size class
-            benchDiv.className = `bench-cards bench-${benchSize}`;
-            
-            let benchHTML = '';
+            const expectedClass = `bench-cards bench-${benchSize}`;
+            if (benchDiv.className !== expectedClass) {
+                benchDiv.className = expectedClass;
+            }
+
+            // Ensure we have the correct number of child elements in benchDiv
+            while (benchDiv.children.length < benchSize) {
+                const newSlot = document.createElement('div');
+                const newIndex = benchDiv.children.length;
+                newSlot.className = 'bench-slot empty';
+                newSlot.setAttribute('data-bench-index', newIndex);
+                benchDiv.appendChild(newSlot);
+            }
+            while (benchDiv.children.length > benchSize) {
+                benchDiv.lastElementChild.remove();
+            }
+
+            // Update each slot
             for (let i = 0; i < benchSize; i++) {
-                if (player.bench[i]) {
-                    const pokemon = player.bench[i];
-                    benchHTML += `
-                        <div class="bench-slot">
+                const slotEl = benchDiv.children[i];
+                const pokemon = player.bench[i];
+
+                if (pokemon) {
+                    const pokemonStateStr = JSON.stringify({
+                        id: pokemon.id,
+                        name: pokemon.name,
+                        image: pokemon.image,
+                        maxHp: pokemon.maxHp,
+                        currentHp: pokemon.currentHp,
+                        abilityUsed: pokemon.abilityUsed,
+                        isKnockedOut: pokemon.isKnockedOut,
+                        energies: pokemon.energies,
+                        tools: pokemon.tools
+                    });
+
+                    if (slotEl.classList.contains('empty') || slotEl.dataset.pokemonState !== pokemonStateStr) {
+                        // Re-render slot content
+                        const hpPercent = pokemon.maxHp > 0 ? (pokemon.currentHp / pokemon.maxHp) * 100 : 0;
+                        const hpClass = getHpColorClass(hpPercent);
+                        const abilityClass = pokemon.abilityUsed ? 'ability-used' : '';
+
+                        const energies = pokemon.energies || [];
+                        let energiesHTML = '';
+                        if (energies.length > 0) {
+                            energiesHTML = `
+                                <div class="bench-energies-bar">
+                                    ${energies.map(e => {
+                                        const { char, color } = getEnergyIcon(e.name);
+                                        return `<span class="bench-energy-pip" style="color:${color}">${char}</span>`;
+                                    }).join('')}
+                                </div>
+                            `;
+                        }
+
+                        const tools = pokemon.tools || [];
+                        let toolsHTML = '';
+                        if (tools.length > 0) {
+                            toolsHTML = `
+                                <div class="bench-tools-bar">
+                                    ${tools.map(t => {
+                                        return `<span class="bench-tool-pip">🔧</span>`;
+                                    }).join('')}
+                                </div>
+                            `;
+                        }
+
+                        slotEl.className = `bench-slot ${abilityClass}`;
+                        slotEl.dataset.pokemonState = pokemonStateStr;
+                        slotEl.innerHTML = `
                             <img src="${pokemon.image}" alt="${pokemon.name}">
-                            <div class="bench-hp">${pokemon.currentHp}/${pokemon.maxHp}</div>
-                        </div>
-                    `;
+                            ${energiesHTML}
+                            ${toolsHTML}
+                            <div class="bench-hpbar">
+                                <div class="hp-bar">
+                                    <div class="hp-fill ${hpClass}" style="width: dots ${hpPercent}%"></div>
+                                    <div class="bench-hp">${pokemon.currentHp}/${pokemon.maxHp}</div>
+                                </div>
+                            </div>
+                            <div class="bench-evolve-flash">${getTrans('evolve-label')}</div>
+                            <div class="bench-ko-flash ${pokemon.isKnockedOut ? 'active' : ''}">${getTrans('ko-label')}</div>
+                            <div class="bench-ability-used-marker">${getTrans('used-label')}</div>
+                        `;
+                    }
                 } else {
-                    benchHTML += '<div class="bench-slot empty"></div>';
+                    if (!slotEl.classList.contains('empty')) {
+                        slotEl.className = 'bench-slot empty';
+                        slotEl.removeAttribute('data-pokemon-state');
+                        slotEl.innerHTML = '';
+                    }
                 }
             }
-            
-            benchDiv.innerHTML = benchHTML;
+
+            for (let i = 0; i < benchSize; i++) {
+                const pokemon = player.bench[i];
+                const slotEl = benchDiv.children[i];
+                if (!pokemon || !slotEl) {
+                    player.prevBenchHps[i] = null;
+                    continue;
+                }
+
+                const hpFillEl = slotEl.querySelector('.hp-fill');
+                const animClass = getHpAnimationClass(player.prevBenchHps[i], pokemon.currentHp);
+
+                if (animClass && hpFillEl) {
+                    triggerOverlayAnimation(hpFillEl, animClass);
+                }
+                player.prevBenchHps[i] = pokemon.currentHp;
+            }
         }
-        
+
         function updatePrizeDisplay(playerNum) {
             const player = matchState[`player${playerNum}`];
-            const prizeContainer = document.getElementById(`player${playerNum}PrizeCards`); // This is the correct ID
-            
-            if (!prizeContainer) {
+            const container = document.getElementById(`player${playerNum}PrizeCards`);
+            if (!container) {
                 console.error(`Prize container not found for player ${playerNum}`);
                 return;
             }
-            
-            const prizeCards = prizeContainer.querySelectorAll('.prize-card');
-            
-            // Clear all taken states first
-            prizeCards.forEach(card => card.classList.remove('taken'));
-            
-            // Handle prizesTaken array (preferred format)
+
+            const prizeCards = container.querySelectorAll('.prize-card');
+
+            // Clear all states first
+            prizeCards.forEach(card => {
+                card.classList.remove('taken', 'penalty');
+            });
+
+            // Apply penalty prizes (dark red - highest priority, shown even if taken)
+            if (player.penaltyPrizes && Array.isArray(player.penaltyPrizes)) {
+                prizeCards.forEach((card, index) => {
+                    if (player.penaltyPrizes[index]) {
+                        card.classList.add('penalty');
+                    }
+                });
+            }
+
+            // Handle prizesTaken array (preferred format) - only for non-penalty slots
             if (player.prizesTaken && Array.isArray(player.prizesTaken)) {
                 prizeCards.forEach((card, index) => {
-                    if (player.prizesTaken.includes(index)) {
+                    if (player.prizesTaken.includes(index) && !card.classList.contains('penalty')) {
                         card.classList.add('taken');
                     }
                 });
-            } 
+            }
             // Handle old boolean array format
             else if (Array.isArray(player.prizes) && typeof player.prizes[0] === 'boolean') {
                 prizeCards.forEach((card, index) => {
-                    if (player.prizes[index] === true) {
+                    if (player.prizes[index] === true && !card.classList.contains('penalty')) {
                         card.classList.add('taken');
                     }
                 });
-            } 
+            }
             // Handle simple prize count
             else if (typeof player.prizes === 'number') {
                 const takenCount = 6 - player.prizes;
                 prizeCards.forEach((card, index) => {
-                    if (index < takenCount) {
+                    if (index < takenCount && !card.classList.contains('penalty')) {
                         card.classList.add('taken');
                     }
                 });
             }
-            
+
             // Always update the count display
             updatePlayerInfo(playerNum);
         }
-        
+
         function updateMatchInfo() {
             const timer = document.getElementById('matchTimer');
             const minutes = String(matchState.timer.minutes).padStart(2, '0');
             const seconds = String(matchState.timer.seconds).padStart(2, '0');
             timer.textContent = `${minutes}:${seconds}`;
-            
+
             const turnIndicator = document.getElementById('turnIndicator');
             const currentPlayerName = matchState[`player${matchState.currentTurn}`].name;
-            turnIndicator.textContent = `${currentPlayerName}'s Turn`;
-            
+            const turnPrefix = getTrans('turn-prefix') || '';
+            const turnSuffix = getTrans('turn-suffix') || '';
+            turnIndicator.textContent = `${turnPrefix}${currentPlayerName}${turnSuffix}`;
+
             const format = document.getElementById('matchFormat');
-            format.textContent = `${matchState.matchFormat.toUpperCase()} • GAME ${matchState.gameNumber}`;
+            const formatStr = matchState.matchFormat.toUpperCase() === 'BEST OF 1' ? getTrans('best-of-1') : (matchState.matchFormat.toUpperCase() === 'BEST OF 3' ? getTrans('best-of-3') : matchState.matchFormat.toUpperCase());
+            const gameText = getTrans('game') || 'GAME';
+            format.textContent = `${formatStr} • ${gameText} ${matchState.gameNumber}`;
+
+            // Highlight current player turn
+            const p1Board = document.getElementById('player1Board');
+            const p2Board = document.getElementById('player2Board');
+            if (p1Board && p2Board) {
+                if (matchState.currentTurn === 1) {
+                    p1Board.classList.add('active-turn');
+                    p2Board.classList.remove('active-turn');
+                } else if (matchState.currentTurn === 2) {
+                    p2Board.classList.add('active-turn');
+                    p1Board.classList.remove('active-turn');
+                } else {
+                    p1Board.classList.remove('active-turn');
+                    p2Board.classList.remove('active-turn');
+                }
+            }
         }
-        
+
+        function updateCustomTextDisplay() {
+            const displayEl = document.getElementById('customOverlayTextDisplay');
+            if (!displayEl) return;
+            if (matchState.visible && matchState.customText && matchState.customText.trim() !== '') {
+                displayEl.textContent = matchState.customText.trim().toUpperCase();
+                displayEl.classList.add('active');
+            } else {
+                displayEl.classList.remove('active');
+            }
+        }
+
         function startTimer() {
             if (matchState.timerInterval) return;
-            
+
             matchState.timerInterval = setInterval(() => {
                 if (matchState.timer.seconds > 0) {
                     matchState.timer.seconds--;
@@ -1151,32 +2529,32 @@
                 updateMatchInfo();
             }, 1000);
         }
-        
+
         function pauseTimer() {
             if (matchState.timerInterval) {
                 clearInterval(matchState.timerInterval);
                 matchState.timerInterval = null;
             }
         }
-        
-        // Initialize display
-        updateDisplay();
-        
-        // Register as overlay
-        socket.emit('register-overlay', 'pokemon-match');
-        console.log('Registering as pokemon-match overlay');
-        
-        // Request current state after registration
-        setTimeout(() => {
-            console.log('Requesting current state...');
-            socket.emit('request-state', 'pokemon-match');
-            showOverlay();
-        }, 500);
-        
-        // Ping connection status periodically
-        setInterval(() => {
+
+        // Initialize display after translations load
+        (async () => {
+            await fetchTranslations();
+            applyTranslations();
+        })();
+
+        // Setup socket connection and reconnection registration
+        socket.on('connect', () => {
+            console.log('Connected to server, registering overlay...');
             socket.emit('register-overlay', 'pokemon-match');
-        }, 5000);
+
+            // Request current state after registration
+            setTimeout(() => {
+                console.log('Requesting current state...');
+                socket.emit('request-state', 'pokemon-match');
+            }, 500);
+        });
     </script>
 </body>
+
 </html>

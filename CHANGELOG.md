@@ -5,6 +5,18 @@ All notable changes to CardCast will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-03
+
+### Fixed
+- Basic Energy during deck import
+
+### Improved
+- Overlay information: energy and tool attachments, stadium in play, ability used
+- Overlay animations: HP changes, Evolutions, KO
+- Quality of life improvements in the match control layout and minor visual "improvements"
+- Basic multi-language support: English and Spanish
+- CardCast.bat added to the repository from the original 1.0.1 release package.
+
 ## [1.0.1] - 2025-08-24
 
 ### Fixed
