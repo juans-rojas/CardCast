@@ -94,6 +94,11 @@ class OverlayServer {
         };
     }
     
+    /**
+     * Broadcast a card update to overlays.
+     * @param {Object} cardData - Complete card metadata
+     * @param {string} [position='left'] - Active overlay slot ('left' or 'right')
+     */
     updateCard(cardData, position = 'left') {
         this.currentCards[position] = cardData;
         this.io.emit('card-update', {
@@ -104,6 +109,10 @@ class OverlayServer {
         });
     }
     
+    /**
+     * Clear active card overlays.
+     * @param {string} [position='both'] - Slot to clear ('left', 'right', or 'both')
+     */
     clearCard(position = 'both') {
         if (position === 'both') {
             this.currentCards.left = null;
@@ -118,6 +127,10 @@ class OverlayServer {
         });
     }
     
+    /**
+     * Update configuration and display of prize cards.
+     * @param {Object} data - Update payload containing player prize cards
+     */
     updatePrizes(data) {
         if (data.player1) {
             this.prizeCards.player1 = data.player1;
@@ -134,6 +147,11 @@ class OverlayServer {
         });
     }
     
+    /**
+     * Mark a prize card as taken and broadcast the event.
+     * @param {number} player - Player index (1 or 2)
+     * @param {number} index - Index of the prize card taken
+     */
     takePrize(player, index) {
         const playerKey = `player${player}`;
         
@@ -156,6 +174,9 @@ class OverlayServer {
         });
     }
     
+    /**
+     * Reset all prize card status trackers for both players.
+     */
     resetPrizes() {
         this.prizeCards = {
             player1: { total: 6, taken: [] },

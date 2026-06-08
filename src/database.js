@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 class CardDatabase {
-    constructor() {
+    constructor(dbPath) {
         // Ensure data directory exists
         const dataDir = path.join(__dirname, '..', 'data');
         if (!fs.existsSync(dataDir)) {
@@ -12,8 +12,8 @@ class CardDatabase {
         }
         
         // Initialize database
-        const dbPath = path.join(dataDir, 'cardcast.db');
-        this.db = new Database(dbPath);
+        const finalDbPath = dbPath || path.join(dataDir, 'cardcast.db');
+        this.db = new Database(finalDbPath);
         
         // Enable WAL mode for better performance
         this.db.pragma('journal_mode = WAL');
@@ -348,6 +348,12 @@ class CardDatabase {
         this.countCardsStmt = this.db.prepare('SELECT COUNT(*) as count FROM cards WHERE game = ?');
     }
     
+    /**
+     * Check if a card exists in the database.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @param {string} productId - Product/Card ID from API
+     * @returns {Object|null} Object with card id and updated_at, or null if not found
+     */
     cardExists(game, productId) {
         try {
             const result = this.checkCardStmt.get(game, productId);
@@ -358,6 +364,11 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Check if a game has any card data loaded in the database.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @returns {boolean} True if the game has cards loaded
+     */
     hasGameData(game) {
         try {
             const result = this.hasDataStmt.get(game);
@@ -368,6 +379,13 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Search for cards matching a query.
+     * Supports exact name search, set search, or name/set/number searches.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @param {string} query - Clean query string (e.g., "Hoothoot", "Hoothoot SCR 114")
+     * @returns {Array<Object>} List of matched cards
+     */
     searchCards(game, query) {
         try {
             // Clean and normalize the query
@@ -460,6 +478,12 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Retrieve a specific card by ID, and track it as recently accessed.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @param {string} cardId - Unique database ID of the card
+     * @returns {Object|null} Card details or null if not found
+     */
     getCard(game, cardId) {
         try {
             const card = this.getCardStmt.get(game, cardId);
@@ -474,6 +498,11 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Get unique sets configured in the database for a game.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @returns {Array<Object>} List of set name, code, and abbreviation mappings
+     */
     getSetMappings(game) {
         try {
             return this.getSetMappingsStmt.all(game);
@@ -483,6 +512,12 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Get the full set name from a set abbreviation.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @param {string} abbreviation - 3-4 letter set abbreviation
+     * @returns {string|null} Full set name or null
+     */
     getSetNameFromAbbreviation(game, abbreviation) {
         try {
             const result = this.getSetNameFromAbbrevStmt.get(game, abbreviation.toUpperCase());
@@ -493,6 +528,12 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Insert or replace a single card into the database.
+     * Extracts search keywords and formats game-specific attributes.
+     * @param {Object} cardData - Complete card details (including game, set, stats, and text)
+     * @returns {Object} Result object with action ('inserted', 'updated', 'skipped') and card id
+     */
     insertCard(cardData) {
         try {
             const searchText = `${cardData.name} ${cardData.set_name} ${cardData.card_number} ${cardData.card_text}`.toLowerCase();
@@ -612,6 +653,12 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Bulk insert or replace an array of cards within a single SQLite transaction.
+     * @param {Array<Object>} cards - List of card objects
+     * @param {boolean} skipExisting - If true, ignores cards already in the database
+     * @returns {Object} Statistics about the bulk insert operation (inserted, updated, skipped, failed)
+     */
     bulkInsertCards(cards, skipExisting = true) {
         const results = {
             inserted: 0,
@@ -657,6 +704,12 @@ class CardDatabase {
         return results;
     }
     
+    /**
+     * Update a game's metadata (card count and last update timestamp) in the database.
+     * If cardCount is omitted, it will automatically query the count from the cards table.
+     * @param {string} gameId - Game identifier (e.g., 'pokemon', 'magic')
+     * @param {number} [cardCount] - Optional total card count
+     */
     updateGameInfo(gameId, cardCount) {
         try {
             // If cardCount is not provided, count the cards
@@ -671,6 +724,12 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Retrieve the most recently accessed cards for a game.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @param {number} [limit=10] - Maximum number of cards to retrieve
+     * @returns {Array<Object>} List of recent cards
+     */
     getRecentCards(game, limit = 10) {
         try {
             return this.db.prepare(`
@@ -686,6 +745,12 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Clear all card and access data for a game in the database.
+     * Resets the card count metadata to 0.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @throws {Error} If clearing fails
+     */
     clearGameData(game) {
         console.log(`Clearing game data for ${game}...`);
         
@@ -734,6 +799,10 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Get details and counts of all configured games.
+     * @returns {Array<Object>} List of games metadata (id, name, card_count, last_update)
+     */
     getGameStats() {
         try {
             return this.db.prepare(`
@@ -747,7 +816,12 @@ class CardDatabase {
         }
     }
     
-    // Save image cache info
+    /**
+     * Save/update image cache information for a card.
+     * @param {string} cardId - Unique database ID of the card
+     * @param {string} imagePath - Local path where the image is cached
+     * @param {number} fileSize - File size in bytes
+     */
     saveImageCache(cardId, imagePath, fileSize) {
         try {
             const stmt = this.db.prepare(`
@@ -760,7 +834,11 @@ class CardDatabase {
         }
     }
     
-    // Get cached image info
+    /**
+     * Retrieve cached image details for a card.
+     * @param {string} cardId - Unique database ID of the card
+     * @returns {Object|null} Object containing image_path and cached_at, or null
+     */
     getCachedImage(cardId) {
         try {
             const stmt = this.db.prepare(`
@@ -773,6 +851,9 @@ class CardDatabase {
         }
     }
     
+    /**
+     * Close the SQLite database connection.
+     */
     close() {
         try {
             this.db.close();
@@ -781,6 +862,11 @@ class CardDatabase {
         }
     }
 
+    /**
+     * Get all unique set codes currently downloaded for a game.
+     * @param {string} game - Game identifier (e.g., 'pokemon', 'magic')
+     * @returns {Set<string>} Set of unique downloaded set codes
+     */
     getDownloadedSets(game) {
         try {
             const stmt = this.db.prepare(`

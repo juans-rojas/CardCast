@@ -126,21 +126,6 @@ function parseMTGDeckList(lines) {
             };
         }
         
-        // Moxfield/Arena simple format: "4 Lightning Bolt" or "4x Lightning Bolt"
-        if (!cardData) {
-            let moxfieldMatch = trimmed.match(/^(\d+)x?\s+(.+)$/);
-            if (moxfieldMatch) {
-                const [_, quantity, name] = moxfieldMatch;
-                cardData = {
-                    quantity: parseInt(quantity),
-                    name: name.trim(),
-                    setCode: '',
-                    number: '',
-                    fullName: name.trim()
-                };
-            }
-        }
-        
         // TCGPlayer format with set in brackets: "1 Sol Ring [Commander Legends]"
         if (!cardData) {
             let tcgMatch = trimmed.match(/^(\d+)x?\s+(.+?)\s+\[([^\]]+)\]$/);
@@ -153,6 +138,21 @@ function parseMTGDeckList(lines) {
                     setName: setName.trim(),
                     number: '',
                     fullName: `${name.trim()} [${setName.trim()}]`
+                };
+            }
+        }
+
+        // Moxfield/Arena simple format: "4 Lightning Bolt" or "4x Lightning Bolt"
+        if (!cardData) {
+            let moxfieldMatch = trimmed.match(/^(\d+)x?\s+(.+)$/);
+            if (moxfieldMatch) {
+                const [_, quantity, name] = moxfieldMatch;
+                cardData = {
+                    quantity: parseInt(quantity),
+                    name: name.trim(),
+                    setCode: '',
+                    number: '',
+                    fullName: name.trim()
                 };
             }
         }
