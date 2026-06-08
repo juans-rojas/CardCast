@@ -24,11 +24,11 @@
             position: relative;
         }
 
-        /* Section I: Universal Card Artwork Crop Rule (aspect-ratio ~2.4:1) */
+        /* Section I: Universal Card Artwork Crop Rule (aspect-ratio 12:7) */
         .cropped-card-art {
             position: relative;
             overflow: hidden;
-            aspect-ratio: 2.4 / 1;
+            aspect-ratio: 12 / 7;
             border-radius: 4px;
             border: 1.5px solid rgba(255, 255, 255, 0.15);
             background-color: #050b18;
@@ -147,7 +147,7 @@
         .player-info-text {
             display: flex;
             flex-direction: column;
-            width: 220px;
+            width: 100%;
         }
         .player-header.mirrored .player-info-text {
             text-align: right;
@@ -196,16 +196,26 @@
 
         /* Prize Pokeballs Vertical Stack (Adjacent side scoring) */
         .prize-pokeballs-container {
+            position: absolute;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            height: 94px;
-            width: 22px;
+            height: 240px;
+            width: 32px;
             padding: 2px 0;
+            z-index: 20;
+        }
+        .panel.left .prize-pokeballs-container {
+            right: -45px;
+            top: 20px;
+        }
+        .panel.right .prize-pokeballs-container {
+            left: -45px;
+            top: 20px;
         }
         .pokeball-icon {
-            width: 13px;
-            height: 13px;
+            width: 28px;
+            height: 28px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
@@ -213,6 +223,14 @@
             opacity: 0.15;
             filter: grayscale(1) contrast(0.5);
             transform: scale(0.85);
+        }
+        .pokeball-icon.penalty {
+            filter: drop-shadow(0 0 5px #ef4444);
+            animation: penaltyGlow 2s infinite ease-in-out;
+        }
+        @keyframes penaltyGlow {
+            0%, 100% { filter: drop-shadow(0 0 4px #ef4444); }
+            50% { filter: drop-shadow(0 0 10px #ef4444); }
         }
 
         /* Active Pokemon Display Zone (Critically Compact) */
@@ -783,6 +801,10 @@
 
         <!-- Player 1 (Left Column) -->
         <div class="panel left" id="player1Board">
+            <!-- Prize Pokeballs Vertical Stack (Absolute columns outside the panel) -->
+            <div class="prize-pokeballs-container" id="player1PrizeCards">
+                <!-- Renders 6 Pokeballs -->
+            </div>
             <!-- Section III: Player Header Block -->
             <div class="player-header">
                 <div class="player-info-text">
@@ -792,10 +814,6 @@
                         <div class="player-record" id="player1Record">0-0-0</div>
                         <img class="player-flag" id="player1Flag" src="https://flagcdn.com/us.svg" alt="US">
                     </div>
-                </div>
-                <!-- Prize Pokeballs Vertical Stack (Adjacent to right of text block) -->
-                <div class="prize-pokeballs-container" id="player1PrizeCards">
-                    <!-- Renders 6 Pokeballs -->
                 </div>
             </div>
 
@@ -843,6 +861,10 @@
 
         <!-- Player 2 (Right Column) -->
         <div class="panel right" id="player2Board">
+            <!-- Prize Pokeballs Vertical Stack (Absolute columns outside the panel) -->
+            <div class="prize-pokeballs-container" id="player2PrizeCards">
+                <!-- Renders 6 Pokeballs -->
+            </div>
             <!-- Section III: Player Header Block (Mirrored) -->
             <div class="player-header mirrored">
                 <div class="player-info-text">
@@ -852,10 +874,6 @@
                         <div class="player-record" id="player2Record">0-0-0</div>
                         <img class="player-flag" id="player2Flag" src="https://flagcdn.com/us.svg" alt="US">
                     </div>
-                </div>
-                <!-- Prize Pokeballs Vertical Stack (Adjacent to left of text block) -->
-                <div class="prize-pokeballs-container" id="player2PrizeCards">
-                    <!-- Renders 6 Pokeballs -->
                 </div>
             </div>
 
@@ -1035,20 +1053,33 @@
             
             // Generate exactly 6 Pokeballs
             for (let i = 0; i < 6; i++) {
-                // If prize taken is in player's prizesTaken list, or remaining prizes counts down, grey out
-                // Broadcast UI: as prizes are taken, the top of the stack is removed or greys out.
-                const isTaken = i < (6 - player.prizes); 
+                let svgClass = 'pokeball-icon';
+                let topFill = '#ef4444';
+                let bottomFill = '#ffffff';
+                let centerFill = '#ffffff';
+                
+                const isPenalty = player.penaltyPrizes && player.penaltyPrizes[i];
+                const isTaken = !isPenalty && ((player.prizesTaken && player.prizesTaken.includes(i)) || (i < (6 - player.prizes)));
+                
+                if (isPenalty) {
+                    svgClass = 'pokeball-icon penalty';
+                    topFill = '#7f1d1d';
+                    bottomFill = '#111827';
+                    centerFill = '#ef4444';
+                } else if (isTaken) {
+                    svgClass = 'pokeball-icon taken';
+                }
                 
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('viewBox', '0 0 100 100');
-                svg.setAttribute('class', `pokeball-icon ${isTaken ? 'taken' : ''}`);
+                svg.setAttribute('class', svgClass);
                 svg.innerHTML = `
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#000000" stroke-width="8"/>
-                    <path d="M 5,50 A 45,45 0 0,1 95,50 Z" fill="#ef4444" stroke="#000000" stroke-width="8"/>
-                    <path d="M 5,50 A 45,45 0 0,0 95,50 Z" fill="#ffffff" stroke="#000000" stroke-width="8"/>
+                    <path d="M 5,50 A 45,45 0 0,1 95,50 Z" fill="${topFill}" stroke="#000000" stroke-width="8"/>
+                    <path d="M 5,50 A 45,45 0 0,0 95,50 Z" fill="${bottomFill}" stroke="#000000" stroke-width="8"/>
                     <line x1="5" y1="50" x2="95" y2="50" stroke="#000000" stroke-width="8"/>
-                    <circle cx="50" cy="50" r="15" fill="#ffffff" stroke="#000000" stroke-width="8"/>
-                    <circle cx="50" cy="50" r="6" fill="#ffffff" stroke="#000000" stroke-width="4"/>
+                    <circle cx="50" cy="50" r="15" fill="${centerFill}" stroke="#000000" stroke-width="8"/>
+                    <circle cx="50" cy="50" r="6" fill="${centerFill}" stroke="#000000" stroke-width="4"/>
                 `;
                 container.appendChild(svg);
             }
@@ -1233,21 +1264,22 @@
         // Update turn action indicator badges
         function updateTurnActions(playerNum) {
             const actions = matchState[`player${playerNum}`].turnActions;
+            const isCurrentTurn = matchState.currentTurn === playerNum;
             
             const energyEl = document.getElementById(`player${playerNum}EnergyAction`);
             const supporterEl = document.getElementById(`player${playerNum}SupporterAction`);
             const retreatEl = document.getElementById(`player${playerNum}RetreatAction`);
 
             if (energyEl) {
-                if (actions.energy) energyEl.classList.add('active');
+                if (isCurrentTurn && !actions.energy) energyEl.classList.add('active');
                 else energyEl.classList.remove('active');
             }
             if (supporterEl) {
-                if (actions.supporter) supporterEl.classList.add('active');
+                if (isCurrentTurn && !actions.supporter) supporterEl.classList.add('active');
                 else supporterEl.classList.remove('active');
             }
             if (retreatEl) {
-                if (actions.retreat) retreatEl.classList.add('active');
+                if (isCurrentTurn && !actions.retreat) retreatEl.classList.add('active');
                 else retreatEl.classList.remove('active');
             }
         }
@@ -1533,7 +1565,7 @@
 
         socket.on('turn-switch', (data) => {
             matchState.currentTurn = data.turn;
-            updateMatchInfo();
+            updateDisplay();
         });
 
         socket.on('timer-start', () => {
