@@ -34,6 +34,7 @@
     "custom-subtitle-label": "Custom Subtitle (Overlay)",
     "custom-subtitle-placeholder": "e.g. ROUND 1, TOP 8, or custom text...",
     "overlay-display-label": "Overlay Display",
+    "overlay-style-label": "Overlay Layout Style",
     "hide-overlay-label": "Hide Overlay",
     "show-overlay-label": "Show Overlay",
     "match-reset-label": "Match Reset",
@@ -74,7 +75,10 @@
     "game-3-option": "Game 3",
     "active-animation-top-deck": "TOP DECK",
     "active-animation-game": "GAME",
-    "active-animation-winner": "WINNER!"
+    "active-animation-winner": "WINNER!",
+    "empty-slot-label": "EMPTY",
+    "broadcast-overlay-style": "Broadcast Style",
+    "standard-overlay-style": "Standard Style"
   },
   "es": {
     "title-control": "CardCast - Control de Partida de Pokémon",
@@ -111,6 +115,7 @@
     "custom-subtitle-label": "Subtítulo Personalizado (Superposición)",
     "custom-subtitle-placeholder": "ej. RONDA 1, TOP 8, o texto personalizado...",
     "overlay-display-label": "Mostrar Superposición",
+    "overlay-style-label": "Estilo de Superposición",
     "hide-overlay-label": "Ocultar Superposición",
     "show-overlay-label": "Mostrar Superposición",
     "match-reset-label": "Reiniciar Partida",
@@ -151,6 +156,9 @@
     "game-3-option": "Juego 3",
     "active-animation-top-deck": "TOP DECK",
     "active-animation-game": "¡JUEGO!",
-    "active-animation-winner": "¡GANADOR!"
+    "active-animation-winner": "¡GANADOR!",
+    "empty-slot-label": "VACÍO",
+    "broadcast-overlay-style": "Estilo Broadcast",
+    "standard-overlay-style": "Estilo Standard"
   }
 }

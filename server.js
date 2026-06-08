@@ -488,6 +488,10 @@ app.get('/pokemon-match', (req, res) => {
     res.sendFile(path.join(__dirname, 'overlays', 'pokemon-match.html'));
 });
 
+app.get('/pokemon-match-broadcast', (req, res) => {
+    res.sendFile(path.join(__dirname, 'overlays', 'pokemon-match-broadcast.html'));
+});
+
 app.get('/pokemon-match-control', (req, res) => {
     res.sendFile(path.join(__dirname, 'pokemon-match-control.html'));
 });
@@ -506,6 +510,7 @@ let mainClients = new Set();
 let controlClients = new Set();
 let overlayStates = {
     'pokemon-match': false,
+    'pokemon-match-broadcast': false,
     'prizes': false,
     'decklist': false,
     'main': false,
@@ -533,13 +538,13 @@ io.on('connection', (socket) => {
         
         // Send current state to the overlay
         const state = overlayServer.getState();
-        if (type === 'pokemon-match') {
+        if (type === 'pokemon-match' || type === 'pokemon-match-broadcast') {
             socket.emit('pokemon-match-state', state.pokemonMatch);
             // Also send as update for compatibility (sending full state)
             socket.emit('pokemon-match-update', state.pokemonMatch);
             // Ask control panels to re-push their overlay visibility state
             // so the overlay gets the authoritative value from the control panel's localStorage
-            io.emit('sync-overlay-visibility', { type: 'pokemon-match' });
+            io.emit('sync-overlay-visibility', { type: type });
         } else if (type === 'prizes') {
             socket.emit('prizes-state', state);
         } else if (type === 'decklist') {
@@ -587,13 +592,13 @@ io.on('connection', (socket) => {
                 deck: state.decklist,
                 show: true
             });
-        } else if (type === 'pokemon-match') {
+        } else if (type === 'pokemon-match' || type === 'pokemon-match-broadcast') {
             // Send the pokemonMatch state from the overlay server
             socket.emit('pokemon-match-state', state.pokemonMatch);
             // Also send as update for compatibility (sending full state)
             socket.emit('pokemon-match-update', state.pokemonMatch);
             // Ask control panels to re-push their overlay visibility state
-            io.emit('sync-overlay-visibility', { type: 'pokemon-match' });
+            io.emit('sync-overlay-visibility', { type: type });
         } else if (type === 'mtg-match') {
             socket.emit('state-update', { mtgMatch: state.mtgMatch });
         }
@@ -900,6 +905,7 @@ io.on('connection', (socket) => {
             
             // Notify control panels
             io.emit('overlay-disconnected', 'pokemon-match');
+            io.emit('overlay-disconnected', 'pokemon-match-broadcast');
             io.emit('overlay-disconnected', 'mtg-match');
             
             // If no more overlays are connected, notify main clients

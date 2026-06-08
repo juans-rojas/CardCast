@@ -68,8 +68,27 @@ console.log('  ✓ Score and record tests passed.');
 console.log('  Testing active Pokemon and bench updates...');
 mockIo.clear();
 
-const testActive = { name: 'Pikachu ex', hp: 200, damage: 30 };
-const testBench = [{ name: 'Charmander', hp: 70 }, { name: 'Squirtle', hp: 60 }];
+const testActive = { 
+    name: 'Pikachu ex', 
+    hp: 200, 
+    damage: 30,
+    ability_name: 'Volt Float',
+    ability_text: 'If this Pokemon has any Lightning Energy attached...',
+    attack1_name: 'Iron Tail',
+    attack1_damage: '30x',
+    attack1_text: 'Flip a coin until you get tails...'
+};
+const testBench = [{ 
+    name: 'Charmander', 
+    hp: 70,
+    attack1_name: 'Scratch',
+    attack1_damage: '10'
+}, { 
+    name: 'Squirtle', 
+    hp: 60,
+    attack1_name: 'Water Gun',
+    attack1_damage: '20'
+}];
 
 server.updateActivePokemon(1, testActive);
 server.updateBench(2, testBench);
@@ -80,7 +99,7 @@ assert.deepStrictEqual(pokemonState.player2.bench, testBench);
 
 assert.deepStrictEqual(mockIo.getLastEvent('active-pokemon').pokemon, testActive);
 assert.deepStrictEqual(mockIo.getLastEvent('bench-update').bench, testBench);
-console.log('  ✓ Active Pokemon and bench update tests passed.');
+console.log('  ✓ Active Pokemon and bench update tests passed (with ability/attacks).');
 
 // 5. Test Turn Actions
 console.log('  Testing turn action state tracking...');

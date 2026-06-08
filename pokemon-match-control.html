@@ -1038,7 +1038,7 @@
                 <!-- Overlay Display -->
                 <div class="border-b border-base-300 py-4">
                     <h3 class="text-sm uppercase tracking-wider text-primary font-semibold mb-3" data-i18n="overlay-display-label">Overlay Display</h3>
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 mb-4">
                         <span id="hideOverlayLabel"
                             class="text-sm font-semibold transition-colors duration-200 cursor-pointer text-warning font-bold"
                             onclick="hidePokemonOverlay()" data-i18n="hide-overlay-label">Hide Overlay</span>
@@ -1047,6 +1047,28 @@
                         <span id="showOverlayLabel"
                             class="text-sm font-semibold transition-colors duration-200 cursor-pointer text-base-content/45"
                             onclick="showPokemonOverlay()" data-i18n="show-overlay-label">Show Overlay</span>
+                    </div>
+
+                    <!-- Overlay Layout Style -->
+                    <div class="form-control w-full max-w-xs mb-3">
+                        <label class="label pb-1">
+                            <span class="label-text font-semibold text-xs" data-i18n="overlay-style-label">Overlay Layout Style</span>
+                        </label>
+                        <select id="overlayStyleSelect" class="select select-bordered select-sm w-full" onchange="changeOverlayStyle(this.value)">
+                            <option value="standard" data-i18n="standard-overlay-style">Standard Style</option>
+                            <option value="broadcast" data-i18n="broadcast-overlay-style">Broadcast Style</option>
+                        </select>
+                    </div>
+
+                    <!-- OBS Browser Source Link Display -->
+                    <div class="bg-base-200 p-2.5 rounded-lg border border-base-300 mt-2">
+                        <div class="flex justify-between items-center gap-2">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[10px] uppercase tracking-wider opacity-60 font-semibold mb-0.5">OBS Browser Source Link</p>
+                                <p class="text-xs font-mono truncate text-success" id="obsOverlayLink">http://localhost:3888/pokemon-match</p>
+                            </div>
+                            <button class="btn btn-ghost btn-xs text-primary font-bold shrink-0" onclick="copyObsLink()">Copy</button>
+                        </div>
                     </div>
                 </div>
 
@@ -1346,13 +1368,17 @@
 
             // Listen for overlay connections
             socket.on('overlay-connected', (type) => {
-                if (type === 'pokemon-match') {
+                const selectedStyle = localStorage.getItem('pokemon-overlay-style') || 'standard';
+                const activeType = selectedStyle === 'standard' ? 'pokemon-match' : 'pokemon-match-broadcast';
+                if (type === activeType) {
                     updateOverlayStatus(true);
                 }
             });
 
             socket.on('overlay-disconnected', (type) => {
-                if (type === 'pokemon-match') {
+                const selectedStyle = localStorage.getItem('pokemon-overlay-style') || 'standard';
+                const activeType = selectedStyle === 'standard' ? 'pokemon-match' : 'pokemon-match-broadcast';
+                if (type === activeType) {
                     updateOverlayStatus(false);
                 }
             });
@@ -1363,6 +1389,7 @@
 
                 // Request overlay status
                 socket.emit('check-overlay-status', 'pokemon-match');
+                socket.emit('check-overlay-status', 'pokemon-match-broadcast');
 
                 // Sync current state with the server immediately on connection
                 socket.emit('pokemon-match-update', matchState);
@@ -1373,10 +1400,13 @@
 
             // When a new overlay connects, the server asks us to push our visibility state
             socket.on('sync-overlay-visibility', (data) => {
-                if (data.type === 'pokemon-match') {
+                if (data.type === 'pokemon-match' || data.type === 'pokemon-match-broadcast') {
                     socket.emit('toggle-pokemon-match', { show: matchState.showOverlay !== undefined ? matchState.showOverlay : false });
                 }
             });
+
+            // Initialize style display
+            updateObsLinkDisplay();
         });
 
         // Populate deck cards when opening search
@@ -3191,7 +3221,21 @@
                     maxHp: parseInt(card.hp) || 100,
                     currentHp: currentHp,
                     energies: existingEnergies,
-                    tools: existingTools
+                    tools: existingTools,
+                    ability_name: card.ability_name || '',
+                    ability_text: card.ability_text || '',
+                    attack1_name: card.attack1_name || '',
+                    attack1_cost: card.attack1_cost || '',
+                    attack1_damage: card.attack1_damage || '',
+                    attack1_text: card.attack1_text || '',
+                    attack2_name: card.attack2_name || '',
+                    attack2_cost: card.attack2_cost || '',
+                    attack2_damage: card.attack2_damage || '',
+                    attack2_text: card.attack2_text || '',
+                    attack3_name: card.attack3_name || '',
+                    attack3_cost: card.attack3_cost || '',
+                    attack3_damage: card.attack3_damage || '',
+                    attack3_text: card.attack3_text || ''
                 };
 
                 if (currentSelection.slot === 'active') {
@@ -4275,6 +4319,47 @@
             };
         }
 
+        function changeOverlayStyle(style) {
+            localStorage.setItem('pokemon-overlay-style', style);
+            updateObsLinkDisplay();
+            const targetOverlay = style === 'standard' ? 'pokemon-match' : 'pokemon-match-broadcast';
+            socket.emit('check-overlay-status', targetOverlay);
+        }
+
+        function updateObsLinkDisplay() {
+            const style = localStorage.getItem('pokemon-overlay-style') || 'standard';
+            const selectEl = document.getElementById('overlayStyleSelect');
+            if (selectEl) {
+                selectEl.value = style;
+            }
+            const linkEl = document.getElementById('obsOverlayLink');
+            if (linkEl) {
+                const port = window.location.port ? `:${window.location.port}` : '';
+                const path = style === 'standard' ? '/pokemon-match' : '/pokemon-match-broadcast';
+                linkEl.textContent = `${window.location.protocol}//${window.location.hostname}${port}${path}`;
+            }
+        }
+
+        function copyObsLink() {
+            const linkEl = document.getElementById('obsOverlayLink');
+            if (linkEl) {
+                navigator.clipboard.writeText(linkEl.textContent)
+                    .then(() => {
+                        const copyBtn = document.querySelector('button[onclick="copyObsLink()"]');
+                        if (copyBtn) {
+                            const originalText = copyBtn.textContent;
+                            copyBtn.textContent = 'Copied!';
+                            copyBtn.classList.add('text-success');
+                            setTimeout(() => {
+                                copyBtn.textContent = originalText;
+                                copyBtn.classList.remove('text-success');
+                            }, 1500);
+                        }
+                    })
+                    .catch(err => console.error('Failed to copy text: ', err));
+            }
+        }
+
         // Make functions available globally
         window.selectPokemonFor = selectPokemonFor;
         window.evolvePokemon = evolvePokemon;
@@ -4321,6 +4406,9 @@
         window.handleStadiumQuickSelect = handleStadiumQuickSelect;
         window.updateDeckStadiums = updateDeckStadiums;
         window.toggleAnimation = toggleAnimation;
+        window.changeOverlayStyle = changeOverlayStyle;
+        window.updateObsLinkDisplay = updateObsLinkDisplay;
+        window.copyObsLink = copyObsLink;
     </script>
 </body>
 
