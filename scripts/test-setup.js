@@ -15,6 +15,8 @@ try {
     require('../tests/translations.test.js');
     console.log('');
     require('../tests/database.test.js');
+    console.log('');
+    require('../tests/pokemon-match.test.js');
     
     console.log('');
     console.log('====================================');
