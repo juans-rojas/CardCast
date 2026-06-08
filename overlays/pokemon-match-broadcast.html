@@ -48,7 +48,7 @@
         .panel {
             position: absolute;
             top: 0;
-            width: 320px;
+            width: 384px;
             height: 1080px;
             background: linear-gradient(180deg, #09183b 0%, #050d1e 100%);
             z-index: 10;
@@ -446,8 +446,8 @@
         .stadium-zone {
             position: absolute;
             top: 0;
-            left: 320px;
-            width: 1280px;
+            left: 384px;
+            width: 1152px;
             height: 120px;
             z-index: 10;
             display: flex;
@@ -502,9 +502,9 @@
         /* Section VII: Integrated Bottom Ticker and Branding */
         .bottom-ticker-container {
             position: absolute;
-            left: 320px;
+            left: 384px;
             bottom: 0;
-            width: 1280px;
+            width: 1152px;
             height: 120px;
             z-index: 10;
             display: flex;
@@ -514,7 +514,7 @@
             pointer-events: none;
         }
         .ticker-bar {
-            width: 1160px;
+            width: 1080px;
             height: 56px;
             background: linear-gradient(90deg, #09183b 0%, #050d1e 100%);
             border: 2px solid #1e3a8a;
@@ -717,6 +717,80 @@
             20% { opacity: 1; }
             100% { opacity: 0; }
         }
+
+        /* HP hit/heal animation classes & keyframes */
+        .hp-bar-inner.hit {
+            animation: hpHitPulse 0.9s ease forwards;
+            box-shadow: 0 0 18px rgba(239, 68, 68, 0.75);
+        }
+        .hp-bar-inner.heal {
+            animation: hpHealPulse 0.9s ease forwards;
+            box-shadow: 0 0 18px rgba(16, 185, 129, 0.75);
+        }
+        @keyframes hpHitPulse {
+            0%, 100% { transform: scaleX(1); }
+            20% { transform: scaleX(1.04); }
+            50% { transform: scaleX(1.02); }
+        }
+        @keyframes hpHealPulse {
+            0%, 100% { transform: scaleX(1); }
+            20% { transform: scaleX(1.04); }
+            50% { transform: scaleX(1.02); }
+        }
+
+        /* Evolution card border glows */
+        .active-artwork-frame.evolving img {
+            animation: cardEvolveGlow 1.8s ease forwards;
+        }
+        .bench-slot.evolving img {
+            animation: benchCardEvolveGlow 1.8s ease forwards;
+        }
+        @keyframes cardEvolveGlow {
+            0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); filter: brightness(1); }
+            20% { box-shadow: 0 0 40px rgba(245, 158, 11, 1); filter: brightness(1.3); }
+            40% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(245, 158, 11, 0.8); filter: brightness(1.1); }
+            80% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 30px rgba(245, 158, 11, 0.6); filter: brightness(1.05); }
+            100% { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8); filter: brightness(1); }
+        }
+        @keyframes benchCardEvolveGlow {
+            0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); filter: brightness(1); }
+            20% { box-shadow: 0 0 25px rgba(245, 158, 11, 1); filter: brightness(1.3); }
+            40% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px rgba(245, 158, 11, 0.8); filter: brightness(1.1); }
+            80% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.6), 0 0 15px rgba(245, 158, 11, 0.6); filter: brightness(1.05); }
+            100% { box-shadow: none; filter: brightness(1); }
+        }
+
+        /* Knock Out (K.O.) Display Overlays */
+        .ko-flash {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            background: #000000;
+            color: #ef4444;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border: 1.5px solid #ef4444;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 18;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            white-space: nowrap;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+        }
+        .ko-flash.active {
+            display: block;
+            animation: koPulseActive 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes koPulseActive {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -761,8 +835,9 @@
             <div class="active-zone">
                 <div class="evolve-flash-effect" id="player1ActiveFlash"></div>
                 <div class="active-top-row">
-                    <div class="cropped-card-art active-artwork-frame">
+                    <div class="cropped-card-art active-artwork-frame" id="player1ActiveCardFrame">
                         <img id="player1ActiveImage" src="" alt="Active Pokemon" onerror="this.src='/images/card-back.png'">
+                        <div class="ko-flash" id="player1ActiveKoFlash">K.O.</div>
                     </div>
                     <div class="active-text-details">
                         <div class="active-pokemon-name" id="player1ActiveName">NO ACTIVE</div>
@@ -774,12 +849,6 @@
                         <div class="hp-bar-outer">
                             <div class="hp-bar-inner" id="player1ActiveHpFill"></div>
                         </div>
-                    </div>
-                </div>
-                <div class="active-bottom-row">
-                    <!-- Attached energy / tools display -->
-                    <div class="active-badge-row" id="player1ActiveBadges">
-                        <!-- Energies + Tools -->
                     </div>
                 </div>
             </div>
@@ -819,8 +888,9 @@
             <div class="active-zone">
                 <div class="evolve-flash-effect" id="player2ActiveFlash"></div>
                 <div class="active-top-row">
-                    <div class="cropped-card-art active-artwork-frame">
+                    <div class="cropped-card-art active-artwork-frame" id="player2ActiveCardFrame">
                         <img id="player2ActiveImage" src="" alt="Active Pokemon" onerror="this.src='/images/card-back.png'">
+                        <div class="ko-flash" id="player2ActiveKoFlash">K.O.</div>
                     </div>
                     <div class="active-text-details">
                         <div class="active-pokemon-name" id="player2ActiveName">NO ACTIVE</div>
@@ -832,12 +902,6 @@
                         <div class="hp-bar-outer">
                             <div class="hp-bar-inner" id="player2ActiveHpFill"></div>
                         </div>
-                    </div>
-                </div>
-                <div class="active-bottom-row">
-                    <!-- Attached energy / tools display -->
-                    <div class="active-badge-row" id="player2ActiveBadges">
-                        <!-- Energies + Tools -->
                     </div>
                 </div>
             </div>
@@ -1050,6 +1114,75 @@
             return `<div class="pokemon-details-container" style="display: flex; flex-direction: column; width: 100%; padding: 2px 0;">${html}</div>`;
         }
 
+        // Render Active card attached energy and tools directly inside the artwork frame
+        function renderActiveOverlayBadges(playerNum, energies, tools) {
+            const frameEl = document.getElementById(`player${playerNum}ActiveCardFrame`);
+            if (!frameEl) return;
+
+            const existingEnergies = frameEl.querySelector('.active-energies-bar');
+            if (existingEnergies) existingEnergies.remove();
+            const existingTools = frameEl.querySelector('.active-tools-bar');
+            if (existingTools) existingTools.remove();
+
+            // 1. Render energies (bottom-left)
+            if (energies && energies.length > 0) {
+                const energiesBar = document.createElement('div');
+                energiesBar.className = 'active-energies-bar';
+                energiesBar.style.cssText = 'position: absolute; bottom: 6px; left: 6px; display: flex; gap: 4px; z-index: 15; pointer-events: none;';
+                energies.forEach(energy => {
+                    let { char, color } = getEnergyIcon(energy.name);
+                    if (energy.name && energy.name.toLowerCase().includes('colorless')) {
+                        color = '#000000';
+                    }
+                    const item = document.createElement('div');
+                    item.className = 'active-energy-bar';
+                    item.style.cssText = 'background: #ffffff; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;';
+                    item.innerHTML = `<span class="active-energy-icon" style="font-family: 'EssentiarumTCG', sans-serif; font-size: 11px; line-height: 1; color: ${color};">${char}</span>`;
+                    energiesBar.appendChild(item);
+                });
+                frameEl.appendChild(energiesBar);
+            }
+
+            // 2. Render tools (top-center)
+            if (tools && tools.length > 0) {
+                const toolsBar = document.createElement('div');
+                toolsBar.className = 'active-tools-bar';
+                toolsBar.style.cssText = 'position: absolute; top: 6px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 15; pointer-events: none;';
+                tools.forEach(tool => {
+                    const item = document.createElement('div');
+                    item.className = 'active-tool-bar';
+                    item.style.cssText = 'background: rgba(6, 78, 59, 0.9); border: 1px solid rgba(16, 185, 129, 0.6); color: white; font-size: 8px; font-weight: bold; padding: 1px 4px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.6); display: flex; align-items: center; gap: 3px; white-space: nowrap;';
+                    item.innerHTML = `<span class="active-tool-icon">🔧</span><span class="active-tool-label" style="font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${tool.name}</span>`;
+                    toolsBar.appendChild(item);
+                });
+                frameEl.appendChild(toolsBar);
+            }
+        }
+
+        // Get hit/heal class for HP bar fills
+        function getHpAnimationClass(oldHp, newHp) {
+            if (oldHp === null || oldHp === undefined || newHp === null || newHp === undefined) {
+                return '';
+            }
+            if (newHp < oldHp) return 'hit';
+            if (newHp > oldHp) return 'heal';
+            return '';
+        }
+
+        // Trigger overlay class addition/removal animation helper
+        function triggerOverlayAnimation(element, className) {
+            if (!element || !className) return;
+            element.classList.remove(className);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    element.classList.add(className);
+                });
+            });
+            setTimeout(() => {
+                if (element) element.classList.remove(className);
+            }, 950);
+        }
+
         // Render Prize Pokeballs Stack
         function renderPrizes(playerNum) {
             const player = matchState[`player${playerNum}`];
@@ -1100,7 +1233,7 @@
             const detailsEl = document.getElementById(`player${playerNum}ActiveAbilitiesAttacks`);
             const hpTextEl = document.getElementById(`player${playerNum}ActiveHpText`);
             const hpFillEl = document.getElementById(`player${playerNum}ActiveHpFill`);
-            const badgesEl = document.getElementById(`player${playerNum}ActiveBadges`);
+            const koFlash = document.getElementById(`player${playerNum}ActiveKoFlash`);
 
             if (player.active) {
                 nameEl.textContent = player.active.name.toUpperCase();
@@ -1112,6 +1245,18 @@
                     detailsEl.innerHTML = renderAbilitiesAndAttacks(player.active);
                 }
 
+                // Render active card overlays
+                renderActiveOverlayBadges(playerNum, player.active.energies, player.active.tools);
+
+                // Render KO state
+                if (koFlash) {
+                    if (player.active.isKnockedOut) {
+                        koFlash.classList.add('active');
+                    } else {
+                        koFlash.classList.remove('active');
+                    }
+                }
+
                 // HP Bar
                 const maxHp = player.active.maxHp || 100;
                 const currHp = Math.max(0, player.active.currentHp !== undefined ? player.active.currentHp : maxHp);
@@ -1120,7 +1265,7 @@
                 const percent = Math.min(100, Math.max(0, (currHp / maxHp) * 100));
                 hpFillEl.style.width = `${percent}%`;
                 
-                // Colors
+                // Colors & Hit/Heal Animation
                 hpFillEl.className = 'hp-bar-inner';
                 if (percent <= 20) {
                     hpFillEl.classList.add('critical');
@@ -1128,32 +1273,11 @@
                     hpFillEl.classList.add('low');
                 }
 
-                // Render Energies & Tools Badges
-                badgesEl.innerHTML = '';
-                
-                // Energies
-                if (player.active.energies && player.active.energies.length > 0) {
-                    player.active.energies.forEach(e => {
-                        const { char, color } = getEnergyIcon(e.name);
-                        const circle = document.createElement('div');
-                        circle.className = 'energy-circle';
-                        circle.style.backgroundColor = color;
-                        circle.innerHTML = `<span class="energy-icon-char" style="color: ${color === '#e5e7eb' ? '#1e293b' : '#ffffff'}">${char}</span>`;
-                        circle.title = e.name;
-                        badgesEl.appendChild(circle);
-                    });
+                const animClass = getHpAnimationClass(player.prevActiveHp, currHp);
+                if (animClass) {
+                    triggerOverlayAnimation(hpFillEl, animClass);
                 }
-                
-                // Tools
-                if (player.active.tools && player.active.tools.length > 0) {
-                    player.active.tools.forEach(t => {
-                        const badge = document.createElement('div');
-                        badge.className = 'tool-badge';
-                        badge.textContent = t.name;
-                        badge.title = t.name;
-                        badgesEl.appendChild(badge);
-                    });
-                }
+                player.prevActiveHp = currHp;
 
             } else {
                 nameEl.textContent = getTrans('no-active-pokemon').toUpperCase();
@@ -1161,9 +1285,13 @@
                 if (detailsEl) {
                     detailsEl.innerHTML = '';
                 }
+                renderActiveOverlayBadges(playerNum, [], []);
+                if (koFlash) {
+                    koFlash.classList.remove('active');
+                }
                 hpTextEl.textContent = '0 / 0';
                 hpFillEl.style.width = '0%';
-                badgesEl.innerHTML = '';
+                player.prevActiveHp = null;
             }
         }
 
@@ -1172,6 +1300,13 @@
             const player = matchState[`player${playerNum}`];
             const container = document.getElementById(`player${playerNum}Bench`);
             if (!container) return;
+
+            if (!Array.isArray(player.prevBenchHps)) {
+                player.prevBenchHps = [];
+            }
+            while (player.prevBenchHps.length < 8) {
+                player.prevBenchHps.push(null);
+            }
 
             container.innerHTML = '';
 
@@ -1197,6 +1332,7 @@
                     slotEl.innerHTML = `
                         <div class="cropped-card-art bench-art-thumb">
                             <img src="${pokemon.image || '/images/card-back.png'}" alt="${pokemon.name}">
+                            <div class="ko-flash ${pokemon.isKnockedOut ? 'active' : ''}" style="font-size: 10px; padding: 2px 6px;">K.O.</div>
                         </div>
                         <div class="bench-slot-details" style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px;">
                             <div class="bench-name-row" style="display: flex; justify-content: space-between; align-items: center;">
@@ -1214,6 +1350,22 @@
                     slotEl.innerHTML = `<span class="bench-empty-text">${getTrans('empty-slot-label')}</span>`;
                 }
                 container.appendChild(slotEl);
+            }
+
+            // Trigger HP animations for bench slots
+            for (let i = 0; i < 8; i++) {
+                const pokemon = player.bench && player.bench[i];
+                const slotEl = container.children[i];
+                if (!pokemon || !slotEl) {
+                    player.prevBenchHps[i] = null;
+                    continue;
+                }
+                const hpFillEl = slotEl.querySelector('.hp-bar-inner');
+                const animClass = getHpAnimationClass(player.prevBenchHps[i], pokemon.currentHp);
+                if (animClass && hpFillEl) {
+                    triggerOverlayAnimation(hpFillEl, animClass);
+                }
+                player.prevBenchHps[i] = pokemon.currentHp;
             }
         }
 
@@ -1389,13 +1541,36 @@
             }, 3000);
         }
 
-        // Active Evolution Animation
-        function triggerEvolutionAnimation(playerNum, slot, benchIndex) {
-            const flashEffect = document.getElementById(`player${playerNum}ActiveFlash`);
-            if (flashEffect && slot === 'active') {
-                flashEffect.classList.remove('active');
-                void flashEffect.offsetWidth; // Force reflow
-                flashEffect.classList.add('active');
+        // Active/Bench Evolution Animation handler
+        function triggerEvolutionAnimation(playerNum, slot, benchIndex = null) {
+            let flash;
+            let cardContainer;
+            if (slot === 'active') {
+                cardContainer = document.getElementById(`player${playerNum}ActiveCardFrame`);
+                flash = document.getElementById(`player${playerNum}ActiveFlash`);
+            } else {
+                const benchDiv = document.getElementById(`player${playerNum}Bench`);
+                if (benchDiv && benchIndex !== null) {
+                    cardContainer = benchDiv.children[benchIndex];
+                }
+            }
+
+            if (flash) {
+                flash.classList.remove('active');
+                void flash.offsetWidth;
+                flash.classList.add('active');
+                setTimeout(() => {
+                    if (flash) flash.classList.remove('active');
+                }, 1800);
+            }
+
+            if (cardContainer) {
+                cardContainer.classList.remove('evolving');
+                void cardContainer.offsetWidth;
+                cardContainer.classList.add('evolving');
+                setTimeout(() => {
+                    if (cardContainer) cardContainer.classList.remove('evolving');
+                }, 1800);
             }
         }
 

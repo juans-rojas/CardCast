@@ -71,7 +71,7 @@
         /* Stadium card cropping styles */
         .stadium-card-display {
             width: 120px;
-            height: 40px;
+            height: 70px;
             overflow: hidden;
             position: relative;
             border-radius: 0.375rem;
@@ -80,10 +80,11 @@
 
         .stadium-card-display img {
             position: absolute;
-            width: 100%;
-            top: -15%;
-            left: 0;
-            transform: scale(1.2);
+            width: 119.05%;
+            height: 285.71%;
+            left: -9.52%;
+            top: -31.43%;
+            object-fit: fill;
         }
 
         .stadium-mini-display {
@@ -728,9 +729,8 @@
                                 <div id="activeStadium"
                                     class="stadium-mini-display hidden flex-col items-center gap-1.5 p-1.5 rounded-lg w-full bg-gradient-to-br from-indigo-600 to-purple-600">
                                     <div
-                                        class="stadium-card-display w-full h-16 rounded overflow-hidden relative bg-neutral">
-                                        <img id="stadiumCardImage" src="" alt="Stadium"
-                                            class="absolute w-full top-[-10%] scale-[1.1]">
+                                        class="stadium-card-display rounded overflow-hidden relative bg-neutral">
+                                        <img id="stadiumCardImage" src="" alt="Stadium">
                                     </div>
                                     <div class="text-center w-full">
                                         <div id="stadiumCardName"
