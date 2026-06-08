@@ -42,62 +42,7 @@
             object-fit: fill;
         }
 
-        /* Playmat background placeholder centered in the 16:9 game area */
-        .playmat-placeholder {
-            position: absolute;
-            left: 320px;
-            top: 120px;
-            width: 1280px;
-            height: 720px;
-            background-color: #0b1329;
-            background-image: 
-                radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid rgba(255, 255, 255, 0.04);
-            box-sizing: border-box;
-        }
-        .playmat-circles {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .playmat-center-circle {
-            width: 280px;
-            height: 280px;
-            border: 2px dashed rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            position: relative;
-        }
-        .playmat-center-circle::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
-            border: 2px solid rgba(255, 255, 255, 0.07);
-            border-radius: 50%;
-        }
-        .playmat-text {
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 26px;
-            letter-spacing: 0.25em;
-            color: rgba(255, 255, 255, 0.12);
-            z-index: 2;
-        }
+
 
         /* Solid Esports-Quality Panels (Play! Pokemon Blue Theme) */
         .panel {
@@ -289,7 +234,7 @@
         }
         .hp-bar-outer {
             width: 100%;
-            height: 5px;
+            height: 15px;
             background: rgba(0,0,0,0.6);
             border-radius: 2px;
             overflow: hidden;
@@ -390,14 +335,15 @@
             margin-bottom: 12px;
         }
         .bench-slot {
-            height: 72px; /* Fixed height for benched slots */
+            min-height: 72px;
+            height: auto;
             background: #081534;
             border: 1.5px solid #1e3a8a;
             border-radius: 5px;
             display: flex;
             align-items: center;
             overflow: hidden;
-            padding: 0 8px;
+            padding: 6px 8px;
             gap: 8px;
             transition: all 0.3s ease;
         }
@@ -775,13 +721,7 @@
 </head>
 <body>
 
-    <!-- Central playmat viewport placeholder -->
-    <div class="playmat-placeholder">
-        <div class="playmat-circles">
-            <div class="playmat-center-circle"></div>
-        </div>
-        <div class="playmat-text">GAMEPLAY FEED</div>
-    </div>
+
 
     <!-- Main Overlay Container -->
     <div class="overlay-container" id="overlayContainer">
@@ -826,6 +766,7 @@
                     </div>
                     <div class="active-text-details">
                         <div class="active-pokemon-name" id="player1ActiveName">NO ACTIVE</div>
+                        <div id="player1ActiveAbilitiesAttacks"></div>
                         <div class="active-hp-row">
                             <span>HP</span>
                             <span id="player1ActiveHpText">0 / 0</span>
@@ -836,9 +777,6 @@
                     </div>
                 </div>
                 <div class="active-bottom-row">
-                    <div class="active-attacks-list" id="player1ActiveAttacks">
-                        <!-- Ability / Attacks list summaries -->
-                    </div>
                     <!-- Attached energy / tools display -->
                     <div class="active-badge-row" id="player1ActiveBadges">
                         <!-- Energies + Tools -->
@@ -886,6 +824,7 @@
                     </div>
                     <div class="active-text-details">
                         <div class="active-pokemon-name" id="player2ActiveName">NO ACTIVE</div>
+                        <div id="player2ActiveAbilitiesAttacks"></div>
                         <div class="active-hp-row">
                             <span>HP</span>
                             <span id="player2ActiveHpText">0 / 0</span>
@@ -896,9 +835,6 @@
                     </div>
                 </div>
                 <div class="active-bottom-row">
-                    <div class="active-attacks-list" id="player2ActiveAttacks">
-                        <!-- Ability / Attacks list summaries -->
-                    </div>
                     <!-- Attached energy / tools display -->
                     <div class="active-badge-row" id="player2ActiveBadges">
                         <!-- Energies + Tools -->
@@ -1043,6 +979,77 @@
             return mappings[type] || { char: 'C', color: '#64748b' };
         }
 
+        // Render cost circles using energy types matching the other overlay
+        function renderCostCircles(costString) {
+            const energyTypes = costString ? (costString.match(/[A-Z][a-z]+/g) || []) : [];
+            let html = '';
+            energyTypes.forEach(type => {
+                const { char, color } = getEnergyIcon(type);
+                let circleColor = color;
+                if (type.toLowerCase().includes('colorless')) {
+                    circleColor = '#000000';
+                }
+                html += `<div class="energy-circle" style="background-color: ${circleColor}; display: inline-flex; width: 14px; height: 14px; margin-right: 2px; border-radius: 50%; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 1px 2px rgba(0,0,0,0.4);" title="${type}">
+                    <span class="energy-icon-char" style="font-family: 'EssentiarumTCG', sans-serif; font-size: 9px; line-height: 1; color: ${circleColor === '#e5e7eb' ? '#1e293b' : '#ffffff'}">${char}</span>
+                </div>`;
+            });
+            return `<div class="attack-cost-container" style="display: flex; align-items: center; flex-shrink: 0; min-width: 44px;">${html}</div>`;
+        }
+
+        // Render Pokemon inline details container containing ability and attacks list
+        function renderAbilitiesAndAttacks(pokemon) {
+            if (!pokemon) return '';
+            let html = '';
+
+            // 1. Ability
+            if (pokemon.ability_name) {
+                const isUsed = pokemon.abilityUsed === true;
+                const usedStyle = isUsed ? 'opacity: 0.35; text-decoration: line-through; color: #94a3b8 !important;' : '';
+                html += `
+                    <div class="pokemon-ability-row" style="font-size: 10.5px; font-weight: 700; color: #f59e0b; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; ${usedStyle}">
+                        <span style="text-transform: uppercase; opacity: 0.85;">Ability:</span>
+                        <span>${pokemon.ability_name}</span>
+                    </div>
+                `;
+            }
+
+            // 2. Attacks
+            const attacks = [];
+            if (pokemon.attack1_name) {
+                attacks.push({
+                    name: pokemon.attack1_name,
+                    cost: pokemon.attack1_cost,
+                    damage: pokemon.attack1_damage
+                });
+            }
+            if (pokemon.attack2_name) {
+                attacks.push({
+                    name: pokemon.attack2_name,
+                    cost: pokemon.attack2_cost,
+                    damage: pokemon.attack2_damage
+                });
+            }
+
+            if (attacks.length > 0) {
+                html += '<div class="pokemon-attacks-list" style="display: flex; flex-direction: column; gap: 2.5px; width: 100%;">';
+                attacks.forEach(att => {
+                    const costHtml = renderCostCircles(att.cost);
+                    html += `
+                        <div class="pokemon-attack-row" style="display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; width: 100%; gap: 6px;">
+                            <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+                                ${costHtml}
+                                <span class="attack-name-text" style="font-weight: 600; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.2px;">${att.name}</span>
+                            </div>
+                            <span style="font-weight: 700; color: #60a5fa; flex-shrink: 0;">${att.damage || ''}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            return `<div class="pokemon-details-container" style="display: flex; flex-direction: column; width: 100%; padding: 2px 0;">${html}</div>`;
+        }
+
         // Render Prize Pokeballs Stack
         function renderPrizes(playerNum) {
             const player = matchState[`player${playerNum}`];
@@ -1090,7 +1097,7 @@
             const player = matchState[`player${playerNum}`];
             const nameEl = document.getElementById(`player${playerNum}ActiveName`);
             const imageEl = document.getElementById(`player${playerNum}ActiveImage`);
-            const attacksEl = document.getElementById(`player${playerNum}ActiveAttacks`);
+            const detailsEl = document.getElementById(`player${playerNum}ActiveAbilitiesAttacks`);
             const hpTextEl = document.getElementById(`player${playerNum}ActiveHpText`);
             const hpFillEl = document.getElementById(`player${playerNum}ActiveHpFill`);
             const badgesEl = document.getElementById(`player${playerNum}ActiveBadges`);
@@ -1100,36 +1107,9 @@
                 imageEl.src = player.active.image || '/images/card-back.png';
                 imageEl.style.display = 'block';
 
-                // Render Attacks & Abilities list
-                attacksEl.innerHTML = '';
-                
-                // Ability
-                if (player.active.ability_name) {
-                    const item = document.createElement('div');
-                    item.className = 'active-attack-item ability';
-                    item.textContent = `[Ab] ${player.active.ability_name}`;
-                    item.title = player.active.ability_text || '';
-                    attacksEl.appendChild(item);
-                }
-                
-                // Attack 1
-                if (player.active.attack1_name) {
-                    const item = document.createElement('div');
-                    item.className = 'active-attack-item attack';
-                    const dmg = player.active.attack1_damage ? ` [${player.active.attack1_damage}]` : '';
-                    item.textContent = `${player.active.attack1_name}${dmg}`;
-                    item.title = player.active.attack1_text || '';
-                    attacksEl.appendChild(item);
-                }
-
-                // Attack 2
-                if (player.active.attack2_name) {
-                    const item = document.createElement('div');
-                    item.className = 'active-attack-item attack';
-                    const dmg = player.active.attack2_damage ? ` [${player.active.attack2_damage}]` : '';
-                    item.textContent = `${player.active.attack2_name}${dmg}`;
-                    item.title = player.active.attack2_text || '';
-                    attacksEl.appendChild(item);
+                // Render Abilities and Attacks inline
+                if (detailsEl) {
+                    detailsEl.innerHTML = renderAbilitiesAndAttacks(player.active);
                 }
 
                 // HP Bar
@@ -1178,7 +1158,9 @@
             } else {
                 nameEl.textContent = getTrans('no-active-pokemon').toUpperCase();
                 imageEl.src = '/images/card-back.png';
-                attacksEl.innerHTML = '';
+                if (detailsEl) {
+                    detailsEl.innerHTML = '';
+                }
                 hpTextEl.textContent = '0 / 0';
                 hpFillEl.style.width = '0%';
                 badgesEl.innerHTML = '';
@@ -1210,25 +1192,18 @@
                     if (percent <= 20) hpColor = 'critical';
                     else if (percent < 80) hpColor = 'low';
 
-                    // Summary details of ability or attacks
-                    let traitSummary = '';
-                    if (pokemon.ability_name) {
-                        traitSummary = `[Ab] ${pokemon.ability_name}`;
-                    } else if (pokemon.attack1_name) {
-                        const dmg = pokemon.attack1_damage ? ` [${pokemon.attack1_damage}]` : '';
-                        traitSummary = `${pokemon.attack1_name}${dmg}`;
-                    }
+                    const detailsHtml = renderAbilitiesAndAttacks(pokemon);
 
                     slotEl.innerHTML = `
                         <div class="cropped-card-art bench-art-thumb">
                             <img src="${pokemon.image || '/images/card-back.png'}" alt="${pokemon.name}">
                         </div>
-                        <div class="bench-slot-details">
-                            <div class="bench-name-row">
+                        <div class="bench-slot-details" style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px;">
+                            <div class="bench-name-row" style="display: flex; justify-content: space-between; align-items: center;">
                                 <span class="bench-pokemon-name">${pokemon.name}</span>
                                 <span class="bench-pokemon-hp">${currHp}/${maxHp}</span>
                             </div>
-                            <div class="bench-abilities-summary">${traitSummary}</div>
+                            ${detailsHtml}
                             <div class="hp-bar-outer" style="margin-top:2px;">
                                 <div class="hp-bar-inner ${hpColor}" style="width: ${percent}%"></div>
                             </div>
