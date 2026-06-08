@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1920, height=1080">
-    <title>CardCast - Esports Pokémon TCG Match Overlay</title>
+    <title>CardCast - Professional Broadcast Pokémon TCG Match Overlay</title>
     <!-- Google Fonts for premium esports look -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
@@ -24,28 +24,44 @@
             position: relative;
         }
 
-        /* Centered 16:9 webcam placeholder background behind panels */
+        /* Section I: Universal Card Artwork Crop Rule (aspect-ratio ~2.4:1) */
+        .cropped-card-art {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 2.4 / 1;
+            border-radius: 4px;
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            background-color: #050b18;
+        }
+        .cropped-card-art img {
+            position: absolute;
+            width: 119.05%;  /* 100% / 0.84 (width crop is 8% to 92%) */
+            height: 285.71%; /* 100% / 0.35 (height crop is 11% to 46%) */
+            left: -9.52%;    /* -8% / 0.84 */
+            top: -31.43%;    /* -11% / 0.35 */
+            object-fit: fill;
+        }
+
+        /* Playmat background placeholder centered in the 16:9 game area */
         .playmat-placeholder {
             position: absolute;
             left: 320px;
             top: 120px;
             width: 1280px;
             height: 720px;
-            background-color: #0f172a;
+            background-color: #0b1329;
             background-image: 
-                radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+                radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
             background-size: 40px 40px;
             z-index: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.04);
             box-sizing: border-box;
         }
-
-        /* Playmat Markings */
         .playmat-circles {
             position: absolute;
             width: 100%;
@@ -56,9 +72,9 @@
             justify-content: center;
         }
         .playmat-center-circle {
-            width: 300px;
-            height: 300px;
-            border: 2px dashed rgba(255, 255, 255, 0.15);
+            width: 280px;
+            height: 280px;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             position: relative;
         }
@@ -68,64 +84,62 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 120px;
-            height: 120px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            width: 100px;
+            height: 100px;
+            border: 2px solid rgba(255, 255, 255, 0.07);
             border-radius: 50%;
         }
         .playmat-text {
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 24px;
-            letter-spacing: 0.2em;
-            color: rgba(255, 255, 255, 0.15);
-            text-align: center;
+            font-size: 26px;
+            letter-spacing: 0.25em;
+            color: rgba(255, 255, 255, 0.12);
             z-index: 2;
         }
 
-        /* Left and Right Side Panels */
+        /* Solid Esports-Quality Panels (Play! Pokemon Blue Theme) */
         .panel {
             position: absolute;
             top: 0;
             width: 320px;
             height: 1080px;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(8, 12, 24, 0.98) 100%);
-            backdrop-filter: blur(10px);
+            background: linear-gradient(180deg, #09183b 0%, #050d1e 100%);
             z-index: 10;
             display: flex;
             flex-direction: column;
-            padding: 16px;
+            padding: 14px 16px;
+            border-bottom: 4px solid #1e40af;
+            box-shadow: 8px 0 24px rgba(0, 0, 0, 0.5);
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
         .panel.left {
             left: 0;
-            border-right: 3px solid rgba(59, 130, 246, 0.3);
-            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
+            border-right: 3px solid #1e3a8a;
         }
         .panel.right {
             right: 0;
-            border-left: 3px solid rgba(239, 68, 68, 0.3);
-            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+            border-left: 3px solid #1e3a8a;
         }
 
-        /* Active Player Turn Glow border (Concentrate on highlighting active border) */
+        /* Active Player Turn Glow Highlight (Highlighting border only) */
         .panel.left.active-turn {
-            border-right: 5px solid #10b981; /* Strong green highlight */
-            box-shadow: 15px 0 35px rgba(16, 185, 129, 0.25);
+            border-right: 5px solid #10b981;
+            box-shadow: 12px 0 28px rgba(16, 185, 129, 0.25);
         }
         .panel.right.active-turn {
-            border-left: 5px solid #ef4444; /* Strong red highlight */
-            box-shadow: -15px 0 35px rgba(239, 68, 68, 0.25);
+            border-left: 5px solid #ef4444;
+            box-shadow: -12px 0 28px rgba(239, 68, 68, 0.25);
         }
 
-        /* Header Block styles */
+        /* Player Header Block styles */
         .player-header {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 16px;
-            height: 90px;
+            margin-bottom: 12px;
+            height: 94px;
         }
         .player-header.mirrored {
             flex-direction: row-reverse;
@@ -133,7 +147,7 @@
         .player-info-text {
             display: flex;
             flex-direction: column;
-            width: 216px;
+            width: 220px;
         }
         .player-header.mirrored .player-info-text {
             text-align: right;
@@ -142,7 +156,7 @@
         .player-name {
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
-            font-size: 28px;
+            font-size: 26px;
             color: #ffffff;
             line-height: 1.1;
             white-space: nowrap;
@@ -151,164 +165,115 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+        .player-score {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 19px;
+            color: #fbbf24; /* Amber points */
+            margin-top: 1px;
+        }
         .player-stats-row {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         .player-header.mirrored .player-stats-row {
             flex-direction: row-reverse;
         }
-        .player-score {
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            font-size: 20px;
-            color: #f59e0b; /* Amber games won */
-            background: rgba(245, 158, 11, 0.1);
-            padding: 1px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
         .player-record {
-            font-size: 13px;
+            font-size: 12px;
             color: #94a3b8;
             font-weight: 600;
         }
         .player-flag {
-            width: 20px;
-            height: 14px;
+            width: 18px;
+            height: 12px;
             object-fit: cover;
-            border-radius: 2px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: inline-block;
+            border-radius: 1px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        /* Prize Pokeballs Vertical Stack style */
+        /* Prize Pokeballs Vertical Stack (Adjacent side scoring) */
         .prize-pokeballs-container {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            height: 100px;
-            width: 24px;
+            height: 94px;
+            width: 22px;
             padding: 2px 0;
-            margin-top: -6px;
         }
         .pokeball-icon {
-            width: 14px;
-            height: 14px;
+            width: 13px;
+            height: 13px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
         .pokeball-icon.taken {
-            opacity: 0.12;
+            opacity: 0.15;
             filter: grayscale(1) contrast(0.5);
-            transform: scale(0.9);
+            transform: scale(0.85);
         }
 
-        /* Active Pokemon Display Zone (Vertically Compact) */
+        /* Active Pokemon Display Zone (Critically Compact) */
         .active-zone {
-            background: rgba(30, 41, 59, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 10px;
+            background: #0b1c45;
+            border: 1px solid #1e3a8a;
+            border-radius: 6px;
+            padding: 8px 10px;
             margin-bottom: 12px;
             display: flex;
             flex-direction: column;
+            gap: 6px;
         }
         .panel.left .active-zone {
-            border-left: 3px solid rgba(16, 185, 129, 0.5);
+            border-left: 3.5px solid #10b981;
         }
         .panel.right .active-zone {
-            border-right: 3px solid rgba(239, 68, 68, 0.5);
+            border-right: 3.5px solid #ef4444;
         }
-        .active-main-row {
+        .active-top-row {
             display: flex;
+            align-items: center;
             gap: 10px;
-            margin-bottom: 8px;
         }
         .active-artwork-frame {
-            width: 110px;
-            height: 110px;
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-            background: #0f172a;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 120px; /* Cropped landscape image */
             flex-shrink: 0;
-        }
-        .active-artwork-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: 50% 12%;
         }
         .active-text-details {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            flex-1;
+            justify-content: center;
+            flex: 1;
             min-w: 0;
         }
         .active-pokemon-name {
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
-            font-size: 18px;
+            font-size: 16px;
             color: #ffffff;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
-        .active-attacks-list {
+        .active-hp-row {
             display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-top: 4px;
-            overflow-y: auto;
-            max-height: 85px;
-        }
-        .active-attack-item {
-            font-size: 11px;
-            color: #e2e8f0;
-            line-height: 1.2;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .active-attack-item.ability {
-            color: #fbbf24;
-            font-weight: 700;
-        }
-        .active-attack-item.attack {
-            color: #93c5fd;
-        }
-
-        /* Stats & Energy display */
-        .active-stats-row {
-            display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: space-between;
-            margin-top: 2px;
-            gap: 8px;
-        }
-        .hp-container {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-        }
-        .hp-text-row {
-            display: flex;
-            justify-content: space-between;
             font-size: 11px;
             font-weight: 700;
-            margin-bottom: 2px;
+            color: #cbd5e1;
+            margin-top: 2px;
+            margin-bottom: 3px;
         }
         .hp-bar-outer {
             width: 100%;
-            height: 6px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 3px;
+            height: 5px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 2px;
             overflow: hidden;
             border: 1px solid rgba(255,255,255,0.05);
         }
@@ -324,58 +289,82 @@
         .hp-bar-inner.critical {
             background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
         }
-        
+
+        /* Detail Attacks & Energies Grid Row */
+        .active-bottom-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 4px;
+        }
+        .active-attacks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5px;
+            flex: 1;
+            min-w: 0;
+        }
+        .active-attack-item {
+            font-size: 10.5px;
+            color: #e2e8f0;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .active-attack-item.ability {
+            color: #f59e0b;
+            font-weight: 700;
+        }
+        .active-attack-item.attack {
+            color: #60a5fa;
+        }
+
         .active-badge-row {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             flex-wrap: wrap;
-            max-width: 130px;
+            max-width: 110px;
+            justify-content: flex-end;
+            flex-shrink: 0;
         }
-        
-        @font-face {
-            font-family: 'EssentiarumTCG';
-            src: url('/fonts/EssentiarumTCG.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-        }
-        
         .energy-circle {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-            border: 1px solid rgba(0,0,0,0.2);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+            border: 1px solid rgba(0,0,0,0.15);
         }
         .energy-icon-char {
             font-family: 'EssentiarumTCG', sans-serif;
-            font-size: 12px;
+            font-size: 10.5px;
             line-height: 1;
         }
-
-        /* Tool item badges */
         .tool-badge {
-            background: rgba(6, 78, 59, 0.8);
-            border: 1px solid rgba(52, 211, 153, 0.2);
+            background: rgba(6, 78, 59, 0.9);
+            border: 1px solid rgba(52, 211, 153, 0.25);
             color: #34d399;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
-            padding: 1px 4px;
-            border-radius: 3px;
+            padding: 0px 3px;
+            border-radius: 2px;
             text-transform: uppercase;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 70px;
+            max-width: 60px;
         }
 
-        /* Benched Zone (Expanded 8 slots) */
+        /* Benched Zone (Expanded 8 slots vertical stack) */
         .bench-zone {
-            flex-1;
+            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -383,101 +372,85 @@
             margin-bottom: 12px;
         }
         .bench-slot {
-            height: 60px;
-            background: rgba(30, 41, 59, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 6px;
+            height: 72px; /* Fixed height for benched slots */
+            background: #081534;
+            border: 1.5px solid #1e3a8a;
+            border-radius: 5px;
             display: flex;
+            align-items: center;
             overflow: hidden;
+            padding: 0 8px;
+            gap: 8px;
             transition: all 0.3s ease;
         }
         .bench-slot.empty {
             border: 1px dashed rgba(255, 255, 255, 0.08);
-            background: rgba(15, 23, 42, 0.2);
-            align-items: center;
+            background: rgba(8, 15, 36, 0.3);
             justify-content: center;
         }
         .bench-empty-text {
             font-family: 'Rajdhani', sans-serif;
             font-weight: 600;
             font-size: 12px;
-            letter-spacing: 2px;
-            color: rgba(255, 255, 255, 0.15);
+            letter-spacing: 2.5px;
+            color: rgba(255, 255, 255, 0.16);
             text-transform: uppercase;
         }
         .bench-art-thumb {
-            width: 60px;
-            height: 100%;
-            overflow: hidden;
-            position: relative;
-            background: #0f172a;
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            width: 110px; /* Cropped landscape thumbnail */
             flex-shrink: 0;
-        }
-        .bench-art-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: 50% 12%;
         }
         .bench-slot-details {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 4px 8px;
             flex: 1;
             min-w: 0;
+            gap: 2px;
         }
         .bench-name-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2px;
         }
         .bench-pokemon-name {
             font-weight: 700;
-            font-size: 13px;
+            font-size: 12px;
             color: #ffffff;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             text-transform: uppercase;
+            letter-spacing: 0.2px;
         }
         .bench-pokemon-hp {
-            font-size: 11px;
+            font-size: 10.5px;
             color: #94a3b8;
-            font-weight: 600;
+            font-weight: 700;
         }
         .bench-abilities-summary {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #38bdf8;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            opacity: 0.85;
-        }
-        .bench-hp-bar-outer {
-            width: 100%;
-            height: 4px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 2px;
+            opacity: 0.9;
         }
 
-        /* Status Indicator Buttons / Badges near bottom */
+        /* Turn Action Badges (Controls) */
         .status-indicators {
             display: flex;
             justify-content: space-between;
             gap: 8px;
             margin-top: auto;
             padding-top: 4px;
+            flex-shrink: 0;
         }
         .status-badge {
             flex: 1;
             height: 28px;
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #081534;
+            border: 1.5px solid #1e3a8a;
             border-radius: 4px;
             display: flex;
             align-items: center;
@@ -486,26 +459,26 @@
             font-weight: 700;
             font-size: 11px;
             letter-spacing: 1.5px;
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.25);
             text-transform: uppercase;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
         }
         .panel.left .status-badge.active {
             color: #10b981;
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.4);
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
-            text-shadow: 0 0 4px rgba(16, 185, 129, 0.5);
+            background: rgba(16, 185, 129, 0.12);
+            border-color: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+            text-shadow: 0 0 4px rgba(16, 185, 129, 0.4);
         }
         .panel.right .status-badge.active {
             color: #ef4444;
-            background: rgba(239, 68, 68, 0.15);
-            border-color: rgba(239, 68, 68, 0.4);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
-            text-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+            background: rgba(239, 68, 68, 0.12);
+            border-color: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+            text-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
         }
 
-        /* Top-Center Element (Stadium Zone) */
+        /* Section II: Top-Center Element (Stadium Zone) */
         .stadium-zone {
             position: absolute;
             top: 0;
@@ -519,12 +492,13 @@
             pointer-events: none;
         }
         .stadium-holder {
-            width: 380px;
-            height: 80px;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(8, 12, 24, 0.98) 100%);
-            border-bottom: 2px solid rgba(59, 130, 246, 0.4);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-            border-radius: 0 0 12px 12px;
+            width: 360px;
+            height: 90px;
+            background: linear-gradient(180deg, #09183b 0%, #050d1e 100%);
+            border: 2px solid #1e3a8a;
+            border-top: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border-radius: 0 0 10px 10px;
             display: flex;
             align-items: center;
             padding: 8px 16px;
@@ -532,20 +506,8 @@
             pointer-events: auto;
         }
         .stadium-art-crop {
-            width: 80px;
-            height: 56px;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-            background: #0f172a;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 120px; /* Cropped landscape Stadium card */
             flex-shrink: 0;
-        }
-        .stadium-art-crop img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: 50% 12%;
         }
         .stadium-details {
             display: flex;
@@ -573,7 +535,7 @@
             margin-top: 2px;
         }
 
-        /* Integrated Bottom Ticker and Branding */
+        /* Section VII: Integrated Bottom Ticker and Branding */
         .bottom-ticker-container {
             position: absolute;
             left: 320px;
@@ -590,11 +552,11 @@
         .ticker-bar {
             width: 1160px;
             height: 56px;
-            background: linear-gradient(90deg, rgba(15, 23, 42, 0.95) 0%, rgba(8, 12, 24, 0.98) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-bottom: 3px solid rgba(59, 130, 246, 0.4);
-            border-radius: 8px;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.7);
+            background: linear-gradient(90deg, #09183b 0%, #050d1e 100%);
+            border: 2px solid #1e3a8a;
+            border-bottom: 4px solid #1d4ed8;
+            border-radius: 6px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -618,7 +580,6 @@
             justify-content: flex-end;
         }
         
-        /* Branding & Event logo */
         .ticker-branding {
             display: flex;
             flex-direction: column;
@@ -639,52 +600,52 @@
             letter-spacing: 0.5px;
         }
 
-        /* Central Timer Style */
+        /* Central Digital Timer */
         .timer-box {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.5);
+            border: 1.5px solid #1e3a8a;
             border-radius: 4px;
             padding: 4px 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
         }
         .timer-text {
             font-family: 'Share Tech Mono', monospace;
             font-size: 26px;
             font-weight: 700;
-            color: #38bdf8; /* Esports cyan/blue */
+            color: #38bdf8;
             letter-spacing: 1px;
             text-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
         }
 
-        /* Turn Indicator Graphic */
+        /* Turn Indicator */
         .turn-indicator-box {
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(30, 41, 59, 0.6);
+            background: #081534;
             padding: 6px 16px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            border: 1.5px solid #1e3a8a;
             transition: all 0.3s ease;
         }
         .turn-indicator-box.p1-active {
-            border-color: rgba(16, 185, 129, 0.3);
-            background: rgba(16, 185, 129, 0.1);
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.08);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
         }
         .turn-indicator-box.p2-active {
-            border-color: rgba(239, 68, 68, 0.3);
-            background: rgba(239, 68, 68, 0.1);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.1);
         }
         .turn-indicator-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #64748b;
+            background: #475569;
             transition: all 0.3s ease;
         }
         .turn-indicator-box.p1-active .turn-indicator-dot {
@@ -711,7 +672,7 @@
             color: #ef4444;
         }
 
-        /* Overlay Visibility animations */
+        /* Visibility transition */
         .overlay-container {
             width: 1920px;
             height: 1080px;
@@ -720,8 +681,8 @@
             left: 0;
             pointer-events: none;
             opacity: 0;
-            transform: scale(0.98);
-            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(0.985);
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .overlay-container.visible {
             opacity: 1;
@@ -774,7 +735,7 @@
             text-transform: uppercase;
         }
 
-        /* Evolve Flash Animation effect */
+        /* Evolve Flash Animation */
         .evolve-flash-effect {
             position: absolute;
             inset: 0;
@@ -807,10 +768,10 @@
     <!-- Main Overlay Container -->
     <div class="overlay-container" id="overlayContainer">
 
-        <!-- Top-Center Stadium Zone -->
+        <!-- Section II: Top-Center Element (Stadium Zone) -->
         <div class="stadium-zone">
             <div class="stadium-holder" id="stadiumHolder">
-                <div class="stadium-art-crop">
+                <div class="cropped-card-art stadium-art-crop">
                     <img id="stadiumImage" src="" alt="Stadium" onerror="this.src='/images/card-back.png'">
                 </div>
                 <div class="stadium-details">
@@ -822,45 +783,43 @@
 
         <!-- Player 1 (Left Column) -->
         <div class="panel left" id="player1Board">
-            <!-- Header Block -->
+            <!-- Section III: Player Header Block -->
             <div class="player-header">
                 <div class="player-info-text">
                     <div class="player-name" id="player1Name">Player 1</div>
+                    <div class="player-score" id="player1Score">0</div>
                     <div class="player-stats-row">
-                        <div class="player-score" id="player1Score">0</div>
-                        <div class="player-record" id="player1Record">0/0/0</div>
+                        <div class="player-record" id="player1Record">0-0-0</div>
                         <img class="player-flag" id="player1Flag" src="https://flagcdn.com/us.svg" alt="US">
                     </div>
                 </div>
-                <!-- 6 Prize Pokeballs Vertical Stack (Adjacent to right of text block) -->
+                <!-- Prize Pokeballs Vertical Stack (Adjacent to right of text block) -->
                 <div class="prize-pokeballs-container" id="player1PrizeCards">
                     <!-- Renders 6 Pokeballs -->
                 </div>
             </div>
 
-            <!-- Active Pokemon Zone -->
+            <!-- Section IV: Active Pokemon Display -->
             <div class="active-zone">
                 <div class="evolve-flash-effect" id="player1ActiveFlash"></div>
-                <div class="active-main-row">
-                    <div class="active-artwork-frame">
+                <div class="active-top-row">
+                    <div class="cropped-card-art active-artwork-frame">
                         <img id="player1ActiveImage" src="" alt="Active Pokemon" onerror="this.src='/images/card-back.png'">
                     </div>
                     <div class="active-text-details">
                         <div class="active-pokemon-name" id="player1ActiveName">NO ACTIVE</div>
-                        <div class="active-attacks-list" id="player1ActiveAttacks">
-                            <!-- Ability / Attacks list text fields -->
-                        </div>
-                    </div>
-                </div>
-                <div class="active-stats-row">
-                    <div class="hp-container">
-                        <div class="hp-text-row">
+                        <div class="active-hp-row">
                             <span>HP</span>
                             <span id="player1ActiveHpText">0 / 0</span>
                         </div>
                         <div class="hp-bar-outer">
                             <div class="hp-bar-inner" id="player1ActiveHpFill"></div>
                         </div>
+                    </div>
+                </div>
+                <div class="active-bottom-row">
+                    <div class="active-attacks-list" id="player1ActiveAttacks">
+                        <!-- Ability / Attacks list summaries -->
                     </div>
                     <!-- Attached energy / tools display -->
                     <div class="active-badge-row" id="player1ActiveBadges">
@@ -869,12 +828,12 @@
                 </div>
             </div>
 
-            <!-- Benched Zone (exactly 8 slots) -->
+            <!-- Section V: Benched Zone (exactly 8 slots) -->
             <div class="bench-zone" id="player1Bench">
                 <!-- 8 slots rendered dynamically -->
             </div>
 
-            <!-- Turn Action Badges -->
+            <!-- Section VI: Turn Action Badges -->
             <div class="status-indicators">
                 <div class="status-badge" id="player1EnergyAction">Energy</div>
                 <div class="status-badge" id="player1SupporterAction">Supporter</div>
@@ -884,45 +843,43 @@
 
         <!-- Player 2 (Right Column) -->
         <div class="panel right" id="player2Board">
-            <!-- Header Block (Mirrored) -->
+            <!-- Section III: Player Header Block (Mirrored) -->
             <div class="player-header mirrored">
                 <div class="player-info-text">
                     <div class="player-name" id="player2Name">Player 2</div>
+                    <div class="player-score" id="player2Score">0</div>
                     <div class="player-stats-row">
-                        <div class="player-score" id="player2Score">0</div>
-                        <div class="player-record" id="player2Record">0/0/0</div>
+                        <div class="player-record" id="player2Record">0-0-0</div>
                         <img class="player-flag" id="player2Flag" src="https://flagcdn.com/us.svg" alt="US">
                     </div>
                 </div>
-                <!-- 6 Prize Pokeballs Vertical Stack (Adjacent to left of text block) -->
+                <!-- Prize Pokeballs Vertical Stack (Adjacent to left of text block) -->
                 <div class="prize-pokeballs-container" id="player2PrizeCards">
                     <!-- Renders 6 Pokeballs -->
                 </div>
             </div>
 
-            <!-- Active Pokemon Zone -->
+            <!-- Section IV: Active Pokemon Display -->
             <div class="active-zone">
                 <div class="evolve-flash-effect" id="player2ActiveFlash"></div>
-                <div class="active-main-row">
-                    <div class="active-artwork-frame">
+                <div class="active-top-row">
+                    <div class="cropped-card-art active-artwork-frame">
                         <img id="player2ActiveImage" src="" alt="Active Pokemon" onerror="this.src='/images/card-back.png'">
                     </div>
                     <div class="active-text-details">
                         <div class="active-pokemon-name" id="player2ActiveName">NO ACTIVE</div>
-                        <div class="active-attacks-list" id="player2ActiveAttacks">
-                            <!-- Ability / Attacks list text fields -->
-                        </div>
-                    </div>
-                </div>
-                <div class="active-stats-row">
-                    <div class="hp-container">
-                        <div class="hp-text-row">
+                        <div class="active-hp-row">
                             <span>HP</span>
                             <span id="player2ActiveHpText">0 / 0</span>
                         </div>
                         <div class="hp-bar-outer">
                             <div class="hp-bar-inner" id="player2ActiveHpFill"></div>
                         </div>
+                    </div>
+                </div>
+                <div class="active-bottom-row">
+                    <div class="active-attacks-list" id="player2ActiveAttacks">
+                        <!-- Ability / Attacks list summaries -->
                     </div>
                     <!-- Attached energy / tools display -->
                     <div class="active-badge-row" id="player2ActiveBadges">
@@ -931,12 +888,12 @@
                 </div>
             </div>
 
-            <!-- Benched Zone (exactly 8 slots) -->
+            <!-- Section V: Benched Zone (exactly 8 slots) -->
             <div class="bench-zone" id="player2Bench">
                 <!-- 8 slots rendered dynamically -->
             </div>
 
-            <!-- Turn Action Badges -->
+            <!-- Section VI: Turn Action Badges -->
             <div class="status-indicators">
                 <div class="status-badge" id="player2EnergyAction">Energy</div>
                 <div class="status-badge" id="player2SupporterAction">Supporter</div>
@@ -944,7 +901,7 @@
             </div>
         </div>
 
-        <!-- Integrated Bottom Ticker and Branding -->
+        <!-- Section VII: Integrated Bottom Ticker and Branding -->
         <div class="bottom-ticker-container">
             <div class="ticker-bar">
                 <div class="ticker-section left">
@@ -1080,7 +1037,6 @@
             for (let i = 0; i < 6; i++) {
                 // If prize taken is in player's prizesTaken list, or remaining prizes counts down, grey out
                 // Broadcast UI: as prizes are taken, the top of the stack is removed or greys out.
-                // i.e., indices from 0 to 5. If prizes taken count is X, then top X slots (0 to X-1) are greyed out.
                 const isTaken = i < (6 - player.prizes); 
                 
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1120,7 +1076,7 @@
                 if (player.active.ability_name) {
                     const item = document.createElement('div');
                     item.className = 'active-attack-item ability';
-                    item.textContent = `[Ability] ${player.active.ability_name}`;
+                    item.textContent = `[Ab] ${player.active.ability_name}`;
                     item.title = player.active.ability_text || '';
                     attacksEl.appendChild(item);
                 }
@@ -1228,20 +1184,21 @@
                     if (pokemon.ability_name) {
                         traitSummary = `[Ab] ${pokemon.ability_name}`;
                     } else if (pokemon.attack1_name) {
-                        traitSummary = pokemon.attack1_name;
+                        const dmg = pokemon.attack1_damage ? ` [${pokemon.attack1_damage}]` : '';
+                        traitSummary = `${pokemon.attack1_name}${dmg}`;
                     }
 
                     slotEl.innerHTML = `
-                        <div class="bench-art-thumb">
+                        <div class="cropped-card-art bench-art-thumb">
                             <img src="${pokemon.image || '/images/card-back.png'}" alt="${pokemon.name}">
                         </div>
                         <div class="bench-slot-details">
                             <div class="bench-name-row">
                                 <span class="bench-pokemon-name">${pokemon.name}</span>
-                                <span class="bench-pokemon-hp">${currHp}/${maxHp} HP</span>
+                                <span class="bench-pokemon-hp">${currHp}/${maxHp}</span>
                             </div>
                             <div class="bench-abilities-summary">${traitSummary}</div>
-                            <div class="bench-hp-bar-outer">
+                            <div class="hp-bar-outer" style="margin-top:2px;">
                                 <div class="hp-bar-inner ${hpColor}" style="width: ${percent}%"></div>
                             </div>
                         </div>
@@ -1260,17 +1217,11 @@
             const imageEl = document.getElementById('stadiumImage');
             
             if (matchState.stadium) {
-                nameEl.textContent = matchState.stadium.toUpperCase();
-                // Check if card display image exists. CardCast API uses a local path `/cache/images/pokemon/...` or absolute.
-                // We'll set the stadium image. If it has a specific card structure, we extract image.
-                // Or if it's just a text name, we fallback.
-                // For safety, the stadium update state might look like: { name: 'Lost City', image: '...' } or just 'Lost City'
                 if (typeof matchState.stadium === 'object') {
                     nameEl.textContent = (matchState.stadium.name || '').toUpperCase();
                     imageEl.src = matchState.stadium.image || '/images/card-back.png';
                 } else {
                     nameEl.textContent = matchState.stadium.toUpperCase();
-                    // Fallback search stadium card art
                     imageEl.src = `/cache/images/pokemon/${encodeURIComponent(matchState.stadium)}.png`;
                 }
             } else {
@@ -1319,7 +1270,7 @@
 
             const pData = matchState[`player${playerNum}`];
             if (nameEl) nameEl.textContent = pData.name.toUpperCase();
-            if (scoreEl) scoreEl.textContent = pData.matchScore;
+            if (scoreEl) scoreEl.textContent = `SCORE: ${pData.matchScore}`;
             
             if (recordEl) {
                 const r = pData.record;
@@ -1417,10 +1368,10 @@
 
             // Set colors based on player
             if (playerNum === 1) {
-                nameEl.style.color = '#10b981'; // green accent
+                nameEl.style.color = '#10b981';
                 nameEl.style.textShadow = '0 0 30px rgba(16, 185, 129, 0.6)';
             } else {
-                nameEl.style.color = '#ef4444'; // red accent
+                nameEl.style.color = '#ef4444';
                 nameEl.style.textShadow = '0 0 30px rgba(239, 68, 68, 0.6)';
             }
 
