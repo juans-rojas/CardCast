@@ -8,6 +8,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <style>
+        @font-face {
+            font-family: 'EssentiarumTCG';
+            src: url('/fonts/EssentiarumTCG.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         /* Base Reset & Styling */
         * {
             box-sizing: border-box;
@@ -1026,21 +1033,36 @@
             updateDisplay();
         }
 
-        // Energy Icons Mapping
-        function getEnergyIcon(type) {
-            const mappings = {
-                'Grass': { char: 'G', color: '#10b981' },
-                'Fire': { char: 'R', color: '#ef4444' },
-                'Water': { char: 'W', color: '#3b82f6' },
-                'Lightning': { char: 'L', color: '#f59e0b' },
-                'Psychic': { char: 'P', color: '#a855f7' },
-                'Fighting': { char: 'F', color: '#b45309' },
-                'Darkness': { char: 'D', color: '#475569' },
-                'Metal': { char: 'M', color: '#94a3b8' },
-                'Dragon': { char: 'N', color: '#d97706' },
-                'Colorless': { char: 'C', color: '#64748b' }
-            };
-            return mappings[type] || { char: 'C', color: '#64748b' };
+        // EssentiarumTCG font energy type map: name → { char, color }
+        const ENERGY_ICON_MAP = {
+            'colorless': { char: 'c', color: '#e0e0e0' },
+            'darkness': { char: 'd', color: '#1a4a3a' },
+            'fighting': { char: 'f', color: '#a0522d' },
+            'grass': { char: 'g', color: '#3aaa35' },
+            'lightning': { char: 'l', color: '#f5d800' },
+            'metal': { char: 'm', color: '#b0bec5' },
+            'dragon': { char: 'n', color: '#c9a227' },
+            'psychic': { char: 'p', color: '#a020f0' },
+            'fire': { char: 'r', color: '#e8381a' },
+            'water': { char: 'w', color: '#2979ff' }
+        };
+
+        function getEnergyIcon(energyName) {
+            if (!energyName) return { char: 'c', color: '#e0e0e0' };
+            const key = energyName.toLowerCase().replace(/\s*energy\s*$/i, '').trim();
+            return ENERGY_ICON_MAP[key] || { char: 'c', color: '#e0e0e0' };
+        }
+
+        // Returns styling for energy circles matching user specification
+        function getEnergyCircleStyle(energyName) {
+            const { char, color } = getEnergyIcon(energyName);
+            const isColorless = (energyName || '').toLowerCase().includes('colorless');
+            
+            const bg = isColorless ? '#ffffff' : color;
+            const border = `1.5px solid ${color}`;
+            const textCol = isColorless ? '#000000' : '#ffffff';
+            
+            return { char, bg, border, textCol, color };
         }
 
         // Render cost circles using energy types matching the other overlay
@@ -1048,13 +1070,9 @@
             const energyTypes = costString ? (costString.match(/[A-Z][a-z]+/g) || []) : [];
             let html = '';
             energyTypes.forEach(type => {
-                const { char, color } = getEnergyIcon(type);
-                let circleColor = color;
-                if (type.toLowerCase().includes('colorless')) {
-                    circleColor = '#000000';
-                }
-                html += `<div class="energy-circle" style="background-color: ${circleColor}; display: inline-flex; width: 14px; height: 14px; margin-right: 2px; border-radius: 50%; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 1px 2px rgba(0,0,0,0.4);" title="${type}">
-                    <span class="energy-icon-char" style="font-family: 'EssentiarumTCG', sans-serif; font-size: 9px; line-height: 1; color: ${circleColor === '#e5e7eb' ? '#1e293b' : '#ffffff'}">${char}</span>
+                const { char, bg, border, textCol } = getEnergyCircleStyle(type);
+                html += `<div class="energy-circle" style="background-color: ${bg}; border: ${border}; display: inline-flex; width: 14px; height: 14px; margin-right: 2px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.4);" title="${type}">
+                    <span class="energy-icon-char" style="font-family: 'EssentiarumTCG', sans-serif; font-size: 9px; line-height: 1; color: ${textCol};">${char}</span>
                 </div>`;
             });
             return `<div class="attack-cost-container" style="display: flex; align-items: center; flex-shrink: 0; min-width: 44px;">${html}</div>`;
@@ -1130,14 +1148,11 @@
                 energiesBar.className = 'active-energies-bar';
                 energiesBar.style.cssText = 'position: absolute; bottom: 6px; left: 6px; display: flex; gap: 4px; z-index: 15; pointer-events: none;';
                 energies.forEach(energy => {
-                    let { char, color } = getEnergyIcon(energy.name);
-                    if (energy.name && energy.name.toLowerCase().includes('colorless')) {
-                        color = '#000000';
-                    }
+                    const { char, bg, border, textCol } = getEnergyCircleStyle(energy.name);
                     const item = document.createElement('div');
                     item.className = 'active-energy-bar';
-                    item.style.cssText = 'background: #ffffff; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;';
-                    item.innerHTML = `<span class="active-energy-icon" style="font-family: 'EssentiarumTCG', sans-serif; font-size: 11px; line-height: 1; color: ${color};">${char}</span>`;
+                    item.style.cssText = `background-color: ${bg}; border: ${border}; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;`;
+                    item.innerHTML = `<span class="active-energy-icon" style="font-family: 'EssentiarumTCG', sans-serif; font-size: 11px; line-height: 1; color: ${textCol};">${char}</span>`;
                     energiesBar.appendChild(item);
                 });
                 frameEl.appendChild(energiesBar);
