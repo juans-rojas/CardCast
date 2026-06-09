@@ -185,38 +185,42 @@
             50% { filter: drop-shadow(0 0 10px #ef4444); }
         }
 
-        /* Active Pokemon Display Zone (Critically Compact) */
+        /* Active Pokemon Display Zone (Bigger & Solid Column layout) */
         .active-zone {
             background: #0b1c45;
-            border: 1px solid #1e3a8a;
+            border: 1.5px solid #1e3a8a;
             border-radius: 6px;
-            padding: 8px 10px;
             margin-bottom: 12px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            overflow: hidden;
+            position: relative;
         }
         .panel.left .active-zone {
-            border-left: 3.5px solid #10b981;
+            border-left: 4px solid #10b981;
         }
         .panel.right .active-zone {
-            border-right: 3.5px solid #ef4444;
+            border-right: 4px solid #ef4444;
         }
         .active-top-row {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            width: 100%;
         }
         .active-artwork-frame {
-            width: 120px; /* Cropped landscape image */
+            width: 100%;
+            aspect-ratio: 12 / 7;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1.5px solid #1e3a8a;
             flex-shrink: 0;
         }
         .active-text-details {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            flex: 1;
-            min-w: 0;
+            padding: 10px 12px 12px 12px;
+            width: 100%;
+            box-sizing: border-box;
         }
         .active-pokemon-name {
             font-family: 'Rajdhani', sans-serif;
@@ -746,25 +750,38 @@
         }
 
         /* Evolution card border glows */
+        .active-artwork-frame.evolving {
+            animation: cardContainerEvolveGlow 1.8s ease forwards;
+        }
         .active-artwork-frame.evolving img {
-            animation: cardEvolveGlow 1.8s ease forwards;
+            animation: cardImgEvolveBrightness 1.8s ease forwards;
         }
-        .bench-slot.evolving img {
-            animation: benchCardEvolveGlow 1.8s ease forwards;
+        .bench-art-thumb.evolving {
+            animation: benchContainerEvolveGlow 1.8s ease forwards;
         }
-        @keyframes cardEvolveGlow {
-            0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); filter: brightness(1); }
-            20% { box-shadow: 0 0 40px rgba(245, 158, 11, 1); filter: brightness(1.3); }
-            40% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(245, 158, 11, 0.8); filter: brightness(1.1); }
-            80% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 30px rgba(245, 158, 11, 0.6); filter: brightness(1.05); }
-            100% { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8); filter: brightness(1); }
+        .bench-art-thumb.evolving img {
+            animation: cardImgEvolveBrightness 1.8s ease forwards;
         }
-        @keyframes benchCardEvolveGlow {
-            0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); filter: brightness(1); }
-            20% { box-shadow: 0 0 25px rgba(245, 158, 11, 1); filter: brightness(1.3); }
-            40% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px rgba(245, 158, 11, 0.8); filter: brightness(1.1); }
-            80% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.6), 0 0 15px rgba(245, 158, 11, 0.6); filter: brightness(1.05); }
-            100% { box-shadow: none; filter: brightness(1); }
+        @keyframes cardContainerEvolveGlow {
+            0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); }
+            20% { box-shadow: 0 0 40px rgba(245, 158, 11, 1); border-color: rgba(245, 158, 11, 1); }
+            40% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(245, 158, 11, 0.8); border-color: rgba(255, 255, 255, 0.8); }
+            80% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 30px rgba(245, 158, 11, 0.6); }
+            100% { box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); }
+        }
+        @keyframes benchContainerEvolveGlow {
+            0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); }
+            20% { box-shadow: 0 0 25px rgba(245, 158, 11, 1); border-color: rgba(245, 158, 11, 1); }
+            40% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px rgba(245, 158, 11, 0.8); border-color: rgba(255, 255, 255, 0.8); }
+            80% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.6), 0 0 15px rgba(245, 158, 11, 0.6); }
+            100% { box-shadow: none; }
+        }
+        @keyframes cardImgEvolveBrightness {
+            0% { filter: brightness(1); }
+            20% { filter: brightness(1.3); }
+            40% { filter: brightness(1.1); }
+            80% { filter: brightness(1.05); }
+            100% { filter: brightness(1); }
         }
 
         /* Knock Out (K.O.) Display Overlays */
@@ -1132,15 +1149,21 @@
             return `<div class="pokemon-details-container" style="display: flex; flex-direction: column; width: 100%; padding: 2px 0;">${html}</div>`;
         }
 
-        // Render Active card attached energy and tools directly inside the artwork frame
-        function renderActiveOverlayBadges(playerNum, energies, tools) {
-            const frameEl = document.getElementById(`player${playerNum}ActiveCardFrame`);
+        // Render card attached energy and tools directly inside the artwork frame
+        function renderCardOverlayBadges(frameEl, energies, tools) {
             if (!frameEl) return;
 
             const existingEnergies = frameEl.querySelector('.active-energies-bar');
             if (existingEnergies) existingEnergies.remove();
             const existingTools = frameEl.querySelector('.active-tools-bar');
             if (existingTools) existingTools.remove();
+
+            const isActive = frameEl.classList.contains('active-artwork-frame');
+            const energySize = isActive ? 18 : 14;
+            const energyFontSize = isActive ? 11 : 9;
+            const toolPadding = isActive ? '1px 4px' : '1px 3px';
+            const toolFontSize = isActive ? 8 : 6;
+            const toolGap = isActive ? 3 : 2;
 
             // 1. Render energies (bottom-left)
             if (energies && energies.length > 0) {
@@ -1151,8 +1174,8 @@
                     const { char, bg, border, textCol } = getEnergyCircleStyle(energy.name);
                     const item = document.createElement('div');
                     item.className = 'active-energy-bar';
-                    item.style.cssText = `background-color: ${bg}; border: ${border}; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;`;
-                    item.innerHTML = `<span class="active-energy-icon" style="font-family: 'EssentiarumTCG', sans-serif; font-size: 11px; line-height: 1; color: ${textCol};">${char}</span>`;
+                    item.style.cssText = `background-color: ${bg}; border: ${border}; width: ${energySize}px; height: ${energySize}px; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;`;
+                    item.innerHTML = `<span class="active-energy-icon" style="font-family: 'EssentiarumTCG', sans-serif; font-size: ${energyFontSize}px; line-height: 1; color: ${textCol};">${char}</span>`;
                     energiesBar.appendChild(item);
                 });
                 frameEl.appendChild(energiesBar);
@@ -1166,8 +1189,8 @@
                 tools.forEach(tool => {
                     const item = document.createElement('div');
                     item.className = 'active-tool-bar';
-                    item.style.cssText = 'background: rgba(6, 78, 59, 0.9); border: 1px solid rgba(16, 185, 129, 0.6); color: white; font-size: 8px; font-weight: bold; padding: 1px 4px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.6); display: flex; align-items: center; gap: 3px; white-space: nowrap;';
-                    item.innerHTML = `<span class="active-tool-icon">🔧</span><span class="active-tool-label" style="font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${tool.name}</span>`;
+                    item.style.cssText = `background: rgba(6, 78, 59, 0.9); border: 1px solid rgba(16, 185, 129, 0.6); color: white; font-size: ${toolFontSize}px; font-weight: bold; padding: ${toolPadding}; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.6); display: flex; align-items: center; gap: ${toolGap}px; white-space: nowrap;`;
+                    item.innerHTML = `<span class="active-tool-icon">🔧</span><span class="active-tool-label" style="font-size: ${toolFontSize - 1}px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${tool.name}</span>`;
                     toolsBar.appendChild(item);
                 });
                 frameEl.appendChild(toolsBar);
@@ -1261,7 +1284,7 @@
                 }
 
                 // Render active card overlays
-                renderActiveOverlayBadges(playerNum, player.active.energies, player.active.tools);
+                renderCardOverlayBadges(document.getElementById(`player${playerNum}ActiveCardFrame`), player.active.energies, player.active.tools);
 
                 // Render KO state
                 if (koFlash) {
@@ -1300,7 +1323,7 @@
                 if (detailsEl) {
                     detailsEl.innerHTML = '';
                 }
-                renderActiveOverlayBadges(playerNum, [], []);
+                renderCardOverlayBadges(document.getElementById(`player${playerNum}ActiveCardFrame`), [], []);
                 if (koFlash) {
                     koFlash.classList.remove('active');
                 }
@@ -1360,6 +1383,10 @@
                             </div>
                         </div>
                     `;
+                    
+                    // Render attachments for bench slot
+                    const artThumb = slotEl.querySelector('.bench-art-thumb');
+                    renderCardOverlayBadges(artThumb, pokemon.energies, pokemon.tools);
                 } else {
                     slotEl.className = 'bench-slot empty';
                     slotEl.innerHTML = `<span class="bench-empty-text">${getTrans('empty-slot-label')}</span>`;
@@ -1565,8 +1592,8 @@
                 flash = document.getElementById(`player${playerNum}ActiveFlash`);
             } else {
                 const benchDiv = document.getElementById(`player${playerNum}Bench`);
-                if (benchDiv && benchIndex !== null) {
-                    cardContainer = benchDiv.children[benchIndex];
+                if (benchDiv && benchIndex !== null && benchDiv.children[benchIndex]) {
+                    cardContainer = benchDiv.children[benchIndex].querySelector('.bench-art-thumb');
                 }
             }
 
